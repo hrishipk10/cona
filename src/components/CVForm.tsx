@@ -138,7 +138,7 @@ const CVForm = () => {
         <FormField
           control={form.control}
           name="cvFile"
-          render={({ field: { onChange, ...field } }) => (
+          render={({ field: { onChange, value, ...field } }) => (
             <FormItem>
               <FormLabel>Upload CV Document</FormLabel>
               <FormControl>
@@ -163,7 +163,9 @@ const CVForm = () => {
                       className="hidden"
                       accept=".pdf,.doc,.docx"
                       onChange={(e) => {
-                        onChange(e.target.files);
+                        if (e.target.files) {
+                          onChange(e.target.files);
+                        }
                       }}
                       {...field}
                     />
