@@ -1,11 +1,24 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Logo from "@/components/Logo";
+import AuthCard from "@/components/AuthCard";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 wave-pattern" />
+      <div className="z-10 space-y-12">
+        <Logo />
+        <div className="flex flex-col md:flex-row gap-6">
+          <AuthCard
+            title="Admin"
+            description="Manage CVs and requirements"
+            type="admin"
+          />
+          <AuthCard
+            title="Applicant"
+            description="Submit your CV"
+            type="applicant"
+          />
+        </div>
       </div>
     </div>
   );
