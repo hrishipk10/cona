@@ -6,6 +6,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import ApplicantLogin from "./pages/ApplicantLogin";
 import ClientDashboard from "./pages/ClientDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/applicant/login" element={<ApplicantLogin />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="*" element={<NotFound />} />

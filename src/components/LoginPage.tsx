@@ -25,7 +25,11 @@ const LoginPage = ({ type }: LoginPageProps) => {
         title: "Login successful",
         description: "Redirecting to dashboard...",
       });
-      navigate("/client/dashboard");
+      if (type === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/client/dashboard");
+      }
     } else {
       toast({
         title: "Login failed",
