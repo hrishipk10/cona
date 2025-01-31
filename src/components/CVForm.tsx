@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Form,
   FormControl,
@@ -26,12 +28,45 @@ interface CVFormData {
 const CVForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<CVFormData>();
+  const { toast } = useToast();
 
   const onSubmit = async (data: CVFormData) => {
     setIsSubmitting(true);
-    console.log("Form data:", data);
-    // Here you would typically send the data to your backend
-    setIsSubmitting(false);
+    try {
+      // Parse years of experience from the experience text
+      const yearsMatch = data.experience.match(/(\d+)\s*years?/i);
+      const yearsExperience = yearsMatch ? parseInt(yearsMatch[1]) : 0;
+
+      // Convert skills string to array
+      const skillsArray = data.skills.split(',').map(skill => skill.trim());
+
+      const { error } = await supabase
+        .from('cvs')
+        .insert({
+          applicant_name: data.fullName,
+          years_experience: yearsExperience,
+          skills: skillsArray,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your CV has been submitted successfully!",
+      });
+
+      form.reset();
+    } catch (error) {
+      console.error('Error submitting CV:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit CV. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -107,7 +142,7 @@ const CVForm = () => {
               <FormLabel>Work Experience</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Describe your work experience"
+                  placeholder="Describe your work experience (e.g., 5 years in software development)"
                   className="min-h-[100px]"
                   {...field}
                 />
@@ -125,7 +160,7 @@ const CVForm = () => {
               <FormLabel>Skills</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="List your technical skills (e.g., Programming languages, tools, frameworks)"
+                  placeholder="List your technical skills, separated by commas (e.g., JavaScript, React, Node.js)"
                   className="min-h-[100px]"
                   {...field}
                 />

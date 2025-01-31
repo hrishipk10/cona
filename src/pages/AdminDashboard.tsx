@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
@@ -32,11 +31,15 @@ const AdminDashboard = () => {
   });
 
   const topCVsByRequirements = cvs?.slice(0, 5) || [];
-  const topCVsByExperience = [...(cvs || [])].sort((a, b) => b.years_experience - a.years_experience).slice(0, 5);
+  const topCVsByExperience = [...(cvs || [])]
+    .sort((a, b) => b.years_experience - a.years_experience)
+    .slice(0, 5);
 
   // Group CVs by years of experience
   const experienceGroups = cvs?.reduce((acc, cv) => {
-    const group = `${Math.floor(cv.years_experience / 2) * 2}-${Math.floor(cv.years_experience / 2) * 2 + 2} years`;
+    const group = `${Math.floor(cv.years_experience / 2) * 2}-${
+      Math.floor(cv.years_experience / 2) * 2 + 2
+    } years`;
     if (!acc[group]) acc[group] = [];
     acc[group].push(cv);
     return acc;
@@ -49,7 +52,7 @@ const AdminDashboard = () => {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      
+
       <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -86,7 +89,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Top CVs by Experience */}
+          {/* Most Experienced Candidates */}
           <Card>
             <CardHeader>
               <CardTitle>Most Experienced Candidates</CardTitle>
