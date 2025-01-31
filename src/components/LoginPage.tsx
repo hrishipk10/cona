@@ -25,6 +25,8 @@ const LoginPage = ({ type }: LoginPageProps) => {
         title: "Login successful",
         description: "Redirecting to dashboard...",
       });
+      
+      // Redirect based on login type
       if (type === "admin") {
         navigate("/admin/dashboard");
       } else {
