@@ -1,13 +1,40 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { User2, Lock } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface LoginPageProps {
   type: "admin" | "applicant";
 }
 
 const LoginPage = ({ type }: LoginPageProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // For testing purposes only - hardcoded credentials
+    if (username === "admin" && password === "admin") {
+      toast({
+        title: "Login successful",
+        description: "Redirecting to dashboard...",
+      });
+      navigate("/client/dashboard");
+    } else {
+      toast({
+        title: "Login failed",
+        description: "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Left side with logo */}
@@ -35,13 +62,15 @@ const LoginPage = ({ type }: LoginPageProps) => {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative">
                 <User2 className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Username"
                   className="pl-10"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
               <div className="relative">
@@ -50,12 +79,14 @@ const LoginPage = ({ type }: LoginPageProps) => {
                   type="password"
                   placeholder="Password"
                   className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-            </div>
-            <Button className="w-full bg-primary hover:bg-primary/90">
-              Login
-            </Button>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+                Login
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
