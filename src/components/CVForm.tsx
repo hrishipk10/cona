@@ -72,7 +72,6 @@ const CVForm = () => {
       return;
     }
 
-    console.log("Submitting form data:", data);
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -88,17 +87,14 @@ const CVForm = () => {
       // Convert skills string to array
       const skillsArray = data.skills.split(',').map(skill => skill.trim());
 
-      const { data: insertedData, error } = await supabase
+      const { error } = await supabase
         .from('cvs')
         .insert({
           applicant_name: data.fullName,
           years_experience: yearsExperience,
           skills: skillsArray,
           status: 'pending',
-        })
-        .select();
-
-      console.log("Supabase response:", { insertedData, error });
+        });
 
       if (error) {
         console.error('Supabase error:', error);
