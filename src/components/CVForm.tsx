@@ -16,6 +16,7 @@ import {
 import { Upload } from "lucide-react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
@@ -32,6 +33,7 @@ type CVFormData = z.infer<typeof formSchema>;
 const CVForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<CVFormData>({
     resolver: zodResolver(formSchema),
@@ -46,9 +48,21 @@ const CVForm = () => {
   });
 
   const onSubmit = async (data: CVFormData) => {
-    console.log("Submitting form data:", data);
     setIsSubmitting(true);
+    
     try {
+      // Check if user is authenticated
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to submit your CV.",
+          variant: "destructive",
+        });
+        navigate("/applicant/login");
+        return;
+      }
+
       // Parse years of experience from the experience text
       const yearsMatch = data.experience.match(/(\d+)\s*years?/i);
       const yearsExperience = yearsMatch ? parseInt(yearsMatch[1]) : 0;
@@ -56,17 +70,14 @@ const CVForm = () => {
       // Convert skills string to array
       const skillsArray = data.skills.split(',').map(skill => skill.trim());
 
-      const { data: insertedData, error } = await supabase
+      const { error } = await supabase
         .from('cvs')
         .insert({
           applicant_name: data.fullName,
           years_experience: yearsExperience,
           skills: skillsArray,
           status: 'pending',
-        })
-        .select();
-
-      console.log("Supabase response:", { insertedData, error });
+        });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -90,6 +101,8 @@ const CVForm = () => {
       setIsSubmitting(false);
     }
   };
+
+  // ... keep existing code (form JSX structure)
 
   return (
     <Form {...form}>
