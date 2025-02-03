@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,24 @@ type CVFormData = z.infer<typeof formSchema>;
 
 const CVForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      
+      // Subscribe to auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsAuthenticated(!!session);
+      });
+
+      return () => subscription.unsubscribe();
+    };
+
+    checkAuth();
+  }, []);
 
   const form = useForm<CVFormData>({
     resolver: zodResolver(formSchema),
@@ -46,9 +63,24 @@ const CVForm = () => {
   });
 
   const onSubmit = async (data: CVFormData) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit your CV.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     console.log("Submitting form data:", data);
     setIsSubmitting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
       // Parse years of experience from the experience text
       const yearsMatch = data.experience.match(/(\d+)\s*years?/i);
       const yearsExperience = yearsMatch ? parseInt(yearsMatch[1]) : 0;
