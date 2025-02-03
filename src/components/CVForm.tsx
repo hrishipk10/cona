@@ -102,8 +102,6 @@ const CVForm = () => {
     }
   };
 
-  // ... keep existing code (form JSX structure)
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
