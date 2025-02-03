@@ -14,23 +14,39 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Upload } from "lucide-react";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface CVFormData {
-  fullName: string;
-  email: string;
-  phone: string;
-  education: string;
-  experience: string;
-  skills: string;
-  cvFile?: FileList;
-}
+const formSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(1, "Phone number is required"),
+  education: z.string().min(1, "Education details are required"),
+  experience: z.string().min(1, "Work experience is required"),
+  skills: z.string().min(1, "Skills are required"),
+  cvFile: z.any().optional(),
+});
+
+type CVFormData = z.infer<typeof formSchema>;
 
 const CVForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const form = useForm<CVFormData>();
   const { toast } = useToast();
 
+  const form = useForm<CVFormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      education: "",
+      experience: "",
+      skills: "",
+    },
+  });
+
   const onSubmit = async (data: CVFormData) => {
+    console.log("Submitting form data:", data);
     setIsSubmitting(true);
     try {
       // Parse years of experience from the experience text
@@ -40,16 +56,22 @@ const CVForm = () => {
       // Convert skills string to array
       const skillsArray = data.skills.split(',').map(skill => skill.trim());
 
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('cvs')
         .insert({
           applicant_name: data.fullName,
           years_experience: yearsExperience,
           skills: skillsArray,
           status: 'pending',
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      console.log("Supabase response:", { insertedData, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
