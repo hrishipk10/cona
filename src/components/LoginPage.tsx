@@ -104,52 +104,57 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
   };
 
   return (
-    <AuthCard
-      title={type === "admin" ? "Admin Portal" : "Applicant Portal"}
-      description={`${type === "admin" ? "Admin access" : "Apply for positions"}`}
-    >
-      <form className="space-y-4" onSubmit={handleAuth}>
-        <div className="space-y-2">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-          <p className="text-sm text-gray-500">
-            Password must be at least 6 characters long
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <Button
-            type="submit"
-            className="flex-1"
-            data-action="login"
-            disabled={isLoading}
-          >
-            {isLoading ? "Loading..." : "Login"}
-          </Button>
-          <Button
-            type="submit"
-            variant="outline"
-            className="flex-1"
-            data-action="signup"
-            disabled={isLoading}
-          >
-            {isLoading ? "Loading..." : "Sign Up"}
-          </Button>
-        </div>
-      </form>
-    </AuthCard>
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 wave-pattern" />
+      <div className="z-10">
+        <AuthCard
+          title={type === "admin" ? "Admin Portal" : "Applicant Portal"}
+          description={`${type === "admin" ? "Admin access" : "Apply for positions"}`}
+        >
+          <form className="space-y-4" onSubmit={handleAuth}>
+            <div className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <p className="text-sm text-gray-500">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <Button
+                type="submit"
+                className="flex-1"
+                data-action="login"
+                disabled={isLoading}
+              >
+                {isLoading ? "Loading..." : "Login"}
+              </Button>
+              <Button
+                type="submit"
+                variant="outline"
+                className="flex-1"
+                data-action="signup"
+                disabled={isLoading}
+              >
+                {isLoading ? "Loading..." : "Sign Up"}
+              </Button>
+            </div>
+          </form>
+        </AuthCard>
+      </div>
+    </div>
   );
 };
 
