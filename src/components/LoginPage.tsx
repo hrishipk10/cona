@@ -17,9 +17,11 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
     return password.length >= 6;
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+
+    const isSignup = (e.nativeEvent.submitter as HTMLButtonElement).dataset.action === "signup";
 
     try {
       if (!validatePassword(password)) {
@@ -31,7 +33,7 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
         return;
       }
 
-      if (e.currentTarget.dataset.action === "signup") {
+      if (isSignup) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -102,7 +104,7 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
   return (
     <AuthCard
       title={type === "admin" ? "Admin Portal" : "Applicant Portal"}
-      subtitle={`${type === "admin" ? "Admin access" : "Apply for positions"}`}
+      description={`${type === "admin" ? "Admin access" : "Apply for positions"}`}
     >
       <form className="space-y-4" onSubmit={handleAuth}>
         <div className="space-y-2">
@@ -140,7 +142,6 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
             className="flex-1"
             data-action="signup"
             disabled={isLoading}
-            onClick={handleAuth}
           >
             {isLoading ? "Loading..." : "Sign Up"}
           </Button>
