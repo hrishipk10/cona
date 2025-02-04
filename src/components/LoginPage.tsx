@@ -21,7 +21,9 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const isSignup = (e.nativeEvent.submitter as HTMLButtonElement).dataset.action === "signup";
+    // Get the button that was clicked using the submitter property
+    const submitter = e.nativeEvent as SubmitEvent;
+    const isSignup = (submitter.submitter as HTMLButtonElement)?.dataset.action === "signup";
 
     try {
       if (!validatePassword(password)) {
