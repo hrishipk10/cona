@@ -61,10 +61,15 @@ const LoginPage = ({ type }: LoginPageProps) => {
             return;
           }
 
-          const { error } = await supabase.auth.signUp({
+          const { data, error } = await supabase.auth.signUp({
             email,
             password,
+            options: {
+              emailRedirectTo: window.location.origin + '/client/dashboard'
+            }
           });
+
+          console.log("Signup response:", { data, error }); // Debug log
 
           if (error) {
             toast({
@@ -72,14 +77,18 @@ const LoginPage = ({ type }: LoginPageProps) => {
               description: error.message,
               variant: "destructive",
             });
-          } else {
+          } else if (data.user) {
             toast({
               title: "Signup successful",
               description: "Please check your email to verify your account.",
             });
+            // Clear form
+            setEmail("");
+            setPassword("");
+            setIsSignUp(false);
           }
         } else {
-          const { error } = await supabase.auth.signInWithPassword({
+          const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
           });
@@ -90,7 +99,7 @@ const LoginPage = ({ type }: LoginPageProps) => {
               description: error.message,
               variant: "destructive",
             });
-          } else {
+          } else if (data.user) {
             toast({
               title: "Login successful",
               description: "Redirecting to dashboard...",
@@ -100,6 +109,7 @@ const LoginPage = ({ type }: LoginPageProps) => {
         }
       }
     } catch (error) {
+      console.error("Auth error:", error); // Debug log
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
