@@ -19,6 +19,7 @@ export type Database = {
           skills: string[]
           status: string | null
           updated_at: string | null
+          user_id: string | null
           years_experience: number
         }
         Insert: {
@@ -30,6 +31,7 @@ export type Database = {
           skills: string[]
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
           years_experience: number
         }
         Update: {
@@ -41,6 +43,7 @@ export type Database = {
           skills?: string[]
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
           years_experience?: number
         }
         Relationships: []
