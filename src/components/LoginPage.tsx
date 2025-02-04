@@ -19,6 +19,13 @@ const LoginPage = ({ type }: LoginPageProps) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const validatePassword = (password: string) => {
+    if (password.length < 6) {
+      return "Password must be at least 6 characters long";
+    }
+    return null;
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -42,6 +49,18 @@ const LoginPage = ({ type }: LoginPageProps) => {
       } else {
         // Handle applicant authentication with Supabase
         if (isSignUp) {
+          // Validate password before signup
+          const passwordError = validatePassword(password);
+          if (passwordError) {
+            toast({
+              title: "Validation Error",
+              description: passwordError,
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+
           const { error } = await supabase.auth.signUp({
             email,
             password,
@@ -132,6 +151,7 @@ const LoginPage = ({ type }: LoginPageProps) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
+                  required
                 />
               </div>
               <div className="relative">
@@ -143,7 +163,14 @@ const LoginPage = ({ type }: LoginPageProps) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
+                  required
+                  minLength={6}
                 />
+                {isSignUp && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Password must be at least 6 characters long
+                  </p>
+                )}
               </div>
               <Button 
                 type="submit" 
