@@ -32,24 +32,21 @@ const LoginPage = ({ type }: LoginPageProps) => {
 
     try {
       if (type === "admin") {
-        // Keep existing admin login logic
         if (email === "admin" && password === "admin") {
           toast({
             title: "Login successful",
-            description: "Redirecting to dashboard...",
+            description: "Welcome back, admin!",
           });
           navigate("/admin/dashboard");
         } else {
           toast({
             title: "Login failed",
-            description: "Invalid credentials. Please try again.",
+            description: "Invalid admin credentials. Please try again.",
             variant: "destructive",
           });
         }
       } else {
-        // Handle applicant authentication with Supabase
         if (isSignUp) {
-          // Validate password before signup
           const passwordError = validatePassword(password);
           if (passwordError) {
             toast({
@@ -69,17 +66,22 @@ const LoginPage = ({ type }: LoginPageProps) => {
             }
           });
 
-          console.log("Signup response:", { data, error }); // Debug log
-
           if (error) {
-            toast({
-              title: "Signup failed",
-              description: error.message,
-              variant: "destructive",
-            });
+            if (error.message.includes("User already registered")) {
+              toast({
+                title: "Account Exists",
+                description: "An account with this email already exists. Please log in instead.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Signup failed",
+                description: error.message,
+                variant: "destructive",
+              });
+            }
           } else if (data.user) {
-            // Check if email confirmation is required
-            if (data.user.identities?.length === 0 || !data.user.email_confirmed_at) {
+            if (!data.user.email_confirmed_at) {
               toast({
                 title: "Signup successful",
                 description: "Please check your email to verify your account before logging in.",
@@ -90,7 +92,6 @@ const LoginPage = ({ type }: LoginPageProps) => {
                 description: "You can now log in with your credentials.",
               });
             }
-            // Clear form
             setEmail("");
             setPassword("");
             setIsSignUp(false);
@@ -101,14 +102,11 @@ const LoginPage = ({ type }: LoginPageProps) => {
             password,
           });
 
-          console.log("Login response:", { data, error }); // Debug log
-
           if (error) {
-            // Check for specific error types
             if (error.message.includes("Invalid login credentials")) {
               toast({
                 title: "Login failed",
-                description: "Please check your email and password. If you haven't verified your email yet, please do so before logging in.",
+                description: "Incorrect email or password. Please try again.",
                 variant: "destructive",
               });
             } else {
@@ -121,7 +119,7 @@ const LoginPage = ({ type }: LoginPageProps) => {
           } else if (data.user) {
             toast({
               title: "Login successful",
-              description: "Redirecting to dashboard...",
+              description: "Welcome back!",
             });
             navigate("/client/dashboard");
           }

@@ -49,11 +49,18 @@ const CVForm = () => {
           status: 'pending',
         });
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Submission Failed",
+          description: "There was an error submitting your CV. Please try again.",
+          variant: "destructive",
+        });
+        throw error;
+      }
 
       toast({
-        title: "Success",
-        description: "Your CV has been submitted successfully!",
+        title: "Success!",
+        description: "Your CV has been submitted successfully. We'll review it soon.",
       });
 
       form.reset();
