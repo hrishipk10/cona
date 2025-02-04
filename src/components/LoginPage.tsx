@@ -21,9 +21,8 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Get the button that was clicked using the submitter property
-    const submitter = e.nativeEvent as SubmitEvent;
-    const isSignup = (submitter.submitter as HTMLButtonElement)?.dataset.action === "signup";
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement;
+    const isSignup = submitter?.dataset.action === "signup";
 
     try {
       if (!validatePassword(password)) {
@@ -32,6 +31,7 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
           description: "Password must be at least 6 characters long.",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
@@ -39,6 +39,11 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              user_type: type // Store user type in metadata
+            }
+          }
         });
 
         if (error) {
@@ -70,19 +75,11 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
         });
 
         if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            toast({
-              title: "Login Failed",
-              description: "Invalid email or password. Please try again.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Login Failed",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password. Please try again.",
+            variant: "destructive",
+          });
         } else if (data.user) {
           toast({
             title: "Login Successful",
