@@ -5,11 +5,10 @@ import { useNavigate } from "react-router-dom";
 interface AuthCardProps {
   title: string;
   description: string;
-  type?: "admin" | "applicant";
-  children?: React.ReactNode;
+  type: "admin" | "applicant";
 }
 
-const AuthCard = ({ title, description, type, children }: AuthCardProps) => {
+const AuthCard = ({ title, description, type }: AuthCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -19,16 +18,12 @@ const AuthCard = ({ title, description, type, children }: AuthCardProps) => {
         <p className="text-sm text-muted-foreground">{description}</p>
       </CardHeader>
       <CardContent>
-        {type ? (
-          <Button 
-            className="w-full"
-            onClick={() => navigate(`/${type}/login`)}
-          >
-            Continue as {type}
-          </Button>
-        ) : (
-          children
-        )}
+        <Button 
+          className="w-full"
+          onClick={() => navigate(`/${type}/login`)}
+        >
+          Continue as {type}
+        </Button>
       </CardContent>
     </Card>
   );

@@ -49,23 +49,14 @@ const CVForm = () => {
           status: 'pending',
         });
 
-      if (error) {
-        if (error.code === '23505') { // Unique constraint error
-          toast({
-            title: "CV Already Exists",
-            description: "You have already submitted a CV.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "Success",
-          description: "Your CV has been submitted successfully! We will review it and get back to you.",
-        });
-        form.reset();
-      }
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your CV has been submitted successfully!",
+      });
+
+      form.reset();
     } catch (error) {
       console.error('Error submitting CV:', error);
       toast({
