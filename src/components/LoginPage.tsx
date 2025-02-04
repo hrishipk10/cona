@@ -78,10 +78,18 @@ const LoginPage = ({ type }: LoginPageProps) => {
               variant: "destructive",
             });
           } else if (data.user) {
-            toast({
-              title: "Signup successful",
-              description: "Please check your email to verify your account.",
-            });
+            // Check if email confirmation is required
+            if (data.user.identities?.length === 0 || !data.user.email_confirmed_at) {
+              toast({
+                title: "Signup successful",
+                description: "Please check your email to verify your account before logging in.",
+              });
+            } else {
+              toast({
+                title: "Signup successful",
+                description: "You can now log in with your credentials.",
+              });
+            }
             // Clear form
             setEmail("");
             setPassword("");
@@ -93,12 +101,23 @@ const LoginPage = ({ type }: LoginPageProps) => {
             password,
           });
 
+          console.log("Login response:", { data, error }); // Debug log
+
           if (error) {
-            toast({
-              title: "Login failed",
-              description: error.message,
-              variant: "destructive",
-            });
+            // Check for specific error types
+            if (error.message.includes("Invalid login credentials")) {
+              toast({
+                title: "Login failed",
+                description: "Please check your email and password. If you haven't verified your email yet, please do so before logging in.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Login failed",
+                description: error.message,
+                variant: "destructive",
+              });
+            }
           } else if (data.user) {
             toast({
               title: "Login successful",
@@ -109,7 +128,7 @@ const LoginPage = ({ type }: LoginPageProps) => {
         }
       }
     } catch (error) {
-      console.error("Auth error:", error); // Debug log
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
