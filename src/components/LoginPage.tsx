@@ -41,30 +41,31 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
           password,
           options: {
             data: {
-              user_type: type // Store user type in metadata
+              user_type: type
             }
           }
         });
 
         if (error) {
-          if (error.message.includes("User already registered")) {
+          toast({
+            title: "Signup Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else if (data.user) {
+          // Check if email confirmation is required
+          if (data.session === null) {
             toast({
-              title: "Account Exists",
-              description: "An account with this email already exists. Please log in instead.",
-              variant: "destructive",
+              title: "Signup Successful",
+              description: "Please check your email to verify your account before logging in.",
             });
           } else {
             toast({
-              title: "Signup Failed",
-              description: error.message,
-              variant: "destructive",
+              title: "Signup Successful",
+              description: "Welcome to the platform!",
             });
+            navigate(`/${type}/dashboard`);
           }
-        } else if (data.user) {
-          toast({
-            title: "Signup Successful",
-            description: "Please check your email to verify your account before logging in.",
-          });
           setEmail("");
           setPassword("");
         }
@@ -75,17 +76,33 @@ const LoginPage = ({ type }: { type: "admin" | "applicant" }) => {
         });
 
         if (error) {
+          let errorMessage = "Invalid email or password. Please try again.";
+          if (error.message.includes("Email not confirmed")) {
+            errorMessage = "Please verify your email before logging in.";
+          }
           toast({
             title: "Login Failed",
-            description: "Invalid email or password. Please try again.",
+            description: errorMessage,
             variant: "destructive",
           });
         } else if (data.user) {
-          toast({
-            title: "Login Successful",
-            description: "Welcome back!",
-          });
-          navigate(`/${type}/dashboard`);
+          const userType = data.user.user_metadata.user_type;
+          
+          // Verify user type matches the login page type
+          if (userType !== type) {
+            toast({
+              title: "Access Denied",
+              description: `This login is for ${type} users only.`,
+              variant: "destructive",
+            });
+            await supabase.auth.signOut();
+          } else {
+            toast({
+              title: "Login Successful",
+              description: "Welcome back!",
+            });
+            navigate(`/${type}/dashboard`);
+          }
         }
       }
     } catch (error) {
