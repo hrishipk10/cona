@@ -11,39 +11,87 @@ export type Database = {
     Tables: {
       cvs: {
         Row: {
+          address: string | null
           applicant_name: string
+          availability_for_remote_work: boolean | null
+          career_goals: string | null
+          certifications: string | null
           created_at: string | null
+          current_job_title: string | null
+          desired_salary: string | null
+          education: string | null
+          email: string | null
+          github_profile: string | null
           id: string
+          industry_experience: string | null
+          languages_known: string[] | null
+          linkedin_profile: string | null
+          phone: string | null
+          portfolio_link: string | null
           rating: number | null
+          references: string | null
           requirements_match: number | null
           skills: string[]
           status: string | null
           updated_at: string | null
           user_id: string | null
+          willingness_to_relocate: boolean | null
           years_experience: number
         }
         Insert: {
+          address?: string | null
           applicant_name: string
+          availability_for_remote_work?: boolean | null
+          career_goals?: string | null
+          certifications?: string | null
           created_at?: string | null
+          current_job_title?: string | null
+          desired_salary?: string | null
+          education?: string | null
+          email?: string | null
+          github_profile?: string | null
           id?: string
+          industry_experience?: string | null
+          languages_known?: string[] | null
+          linkedin_profile?: string | null
+          phone?: string | null
+          portfolio_link?: string | null
           rating?: number | null
+          references?: string | null
           requirements_match?: number | null
           skills: string[]
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          willingness_to_relocate?: boolean | null
           years_experience: number
         }
         Update: {
+          address?: string | null
           applicant_name?: string
+          availability_for_remote_work?: boolean | null
+          career_goals?: string | null
+          certifications?: string | null
           created_at?: string | null
+          current_job_title?: string | null
+          desired_salary?: string | null
+          education?: string | null
+          email?: string | null
+          github_profile?: string | null
           id?: string
+          industry_experience?: string | null
+          languages_known?: string[] | null
+          linkedin_profile?: string | null
+          phone?: string | null
+          portfolio_link?: string | null
           rating?: number | null
+          references?: string | null
           requirements_match?: number | null
           skills?: string[]
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          willingness_to_relocate?: boolean | null
           years_experience?: number
         }
         Relationships: []

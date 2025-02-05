@@ -1,6 +1,7 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Upload } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 
@@ -29,12 +30,40 @@ const CVFormFields = ({ form, isNewSubmission = false }: CVFormFieldsProps) => {
 
         <FormField
           control={form.control}
-          name="experience"
+          name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Work Experience</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., 5 years" {...field} />
+                <Input type="email" placeholder="john@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input placeholder="+1 234 567 8900" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="currentJobTitle"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Current Job Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Senior Developer" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -44,10 +73,110 @@ const CVFormFields = ({ form, isNewSubmission = false }: CVFormFieldsProps) => {
 
       <FormField
         control={form.control}
+        name="address"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Address</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Enter your full address" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="linkedinProfile"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>LinkedIn Profile</FormLabel>
+              <FormControl>
+                <Input placeholder="https://linkedin.com/in/..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="githubProfile"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>GitHub Profile</FormLabel>
+              <FormControl>
+                <Input placeholder="https://github.com/..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name="portfolioLink"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Portfolio Website</FormLabel>
+            <FormControl>
+              <Input placeholder="https://..." {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="experience"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Work Experience</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g., 5 years" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="education"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Education</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Enter your educational background" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="certifications"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Certifications</FormLabel>
+            <FormControl>
+              <Textarea placeholder="List your relevant certifications" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="skills"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Skills</FormLabel>
+            <FormLabel>Technical Skills</FormLabel>
             <FormControl>
               <Textarea
                 placeholder="List your technical skills, separated by commas (e.g., JavaScript, React, Node.js)"
@@ -59,6 +188,114 @@ const CVFormFields = ({ form, isNewSubmission = false }: CVFormFieldsProps) => {
           </FormItem>
         )}
       />
+
+      <FormField
+        control={form.control}
+        name="languagesKnown"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Languages Known</FormLabel>
+            <FormControl>
+              <Input placeholder="English, Spanish, etc. (comma separated)" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="references"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>References</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Enter professional references" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="desiredSalary"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Desired Salary</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g., $80,000 - $100,000" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="industryExperience"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Industry Experience</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Describe your industry experience" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="careerGoals"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Career Goals</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Describe your career goals" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="willingnessToRelocate"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Willing to Relocate</FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="availabilityForRemoteWork"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Available for Remote Work</FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+      </div>
 
       {isNewSubmission && (
         <FormField

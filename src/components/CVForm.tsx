@@ -10,9 +10,22 @@ interface CVFormData {
   fullName: string;
   email: string;
   phone: string;
-  education: string;
+  address: string;
+  linkedinProfile: string;
+  githubProfile: string;
+  portfolioLink: string;
+  currentJobTitle: string;
   experience: string;
+  education: string;
+  certifications: string;
+  references: string;
   skills: string;
+  languagesKnown: string;
+  desiredSalary: string;
+  willingnessToRelocate: boolean;
+  availabilityForRemoteWork: boolean;
+  industryExperience: string;
+  careerGoals: string;
   cvFile?: FileList;
 }
 
@@ -27,10 +40,29 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
     defaultValues: existingCV
       ? {
           fullName: existingCV.applicant_name,
+          email: existingCV.email,
+          phone: existingCV.phone,
+          address: existingCV.address,
+          linkedinProfile: existingCV.linkedin_profile,
+          githubProfile: existingCV.github_profile,
+          portfolioLink: existingCV.portfolio_link,
+          currentJobTitle: existingCV.current_job_title,
           experience: `${existingCV.years_experience} years`,
+          education: existingCV.education,
+          certifications: existingCV.certifications,
+          references: existingCV.references,
           skills: existingCV.skills.join(", "),
+          languagesKnown: existingCV.languages_known?.join(", ") || "",
+          desiredSalary: existingCV.desired_salary,
+          willingnessToRelocate: existingCV.willingness_to_relocate,
+          availabilityForRemoteWork: existingCV.availability_for_remote_work,
+          industryExperience: existingCV.industry_experience,
+          careerGoals: existingCV.career_goals,
         }
-      : {},
+      : {
+          willingnessToRelocate: false,
+          availabilityForRemoteWork: false,
+        },
   });
   const { toast } = useToast();
 
@@ -43,22 +75,39 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
       const yearsMatch = data.experience.match(/(\d+)\s*years?/i);
       const yearsExperience = yearsMatch ? parseInt(yearsMatch[1]) : 0;
       const skillsArray = data.skills.split(',').map(skill => skill.trim());
+      const languagesArray = data.languagesKnown.split(',').map(lang => lang.trim());
+
+      const cvData = {
+        applicant_name: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        linkedin_profile: data.linkedinProfile,
+        github_profile: data.githubProfile,
+        portfolio_link: data.portfolioLink,
+        current_job_title: data.currentJobTitle,
+        years_experience: yearsExperience,
+        education: data.education,
+        certifications: data.certifications,
+        references: data.references,
+        skills: skillsArray,
+        languages_known: languagesArray,
+        desired_salary: data.desiredSalary,
+        willingness_to_relocate: data.willingnessToRelocate,
+        availability_for_remote_work: data.availabilityForRemoteWork,
+        industry_experience: data.industryExperience,
+        career_goals: data.careerGoals,
+      };
 
       const { error } = existingCV
         ? await supabase
             .from('cvs')
-            .update({
-              applicant_name: data.fullName,
-              years_experience: yearsExperience,
-              skills: skillsArray,
-            })
+            .update(cvData)
             .eq('id', existingCV.id)
         : await supabase
             .from('cvs')
             .insert({
-              applicant_name: data.fullName,
-              years_experience: yearsExperience,
-              skills: skillsArray,
+              ...cvData,
               status: 'pending',
               user_id: user.id,
             });
