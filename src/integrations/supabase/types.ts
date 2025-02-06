@@ -14,6 +14,7 @@ export type Database = {
           address: string | null
           applicant_name: string
           availability_for_remote_work: boolean | null
+          avatar_url: string | null
           career_goals: string | null
           certifications: string | null
           created_at: string | null
@@ -42,6 +43,7 @@ export type Database = {
           address?: string | null
           applicant_name: string
           availability_for_remote_work?: boolean | null
+          avatar_url?: string | null
           career_goals?: string | null
           certifications?: string | null
           created_at?: string | null
@@ -70,6 +72,7 @@ export type Database = {
           address?: string | null
           applicant_name?: string
           availability_for_remote_work?: boolean | null
+          avatar_url?: string | null
           career_goals?: string | null
           certifications?: string | null
           created_at?: string | null
@@ -95,6 +98,47 @@ export type Database = {
           years_experience?: number
         }
         Relationships: []
+      }
+      interviews: {
+        Row: {
+          created_at: string | null
+          cv_id: string | null
+          feedback: string | null
+          id: string
+          recruiter_id: string | null
+          scheduled_at: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cv_id?: string | null
+          feedback?: string | null
+          id?: string
+          recruiter_id?: string | null
+          scheduled_at: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cv_id?: string | null
+          feedback?: string | null
+          id?: string
+          recruiter_id?: string | null
+          scheduled_at?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interviews_cv_id_fkey"
+            columns: ["cv_id"]
+            isOneToOne: false
+            referencedRelation: "cvs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {

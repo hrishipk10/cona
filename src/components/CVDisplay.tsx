@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit } from "lucide-react";
+import { Edit, Upload } from "lucide-react";
 
 interface CVDisplayProps {
   cv: {
@@ -24,6 +24,7 @@ interface CVDisplayProps {
     availability_for_remote_work?: boolean;
     industry_experience?: string;
     career_goals?: string;
+    avatar_url?: string;
   };
   onEdit: () => void;
 }
@@ -31,6 +32,24 @@ interface CVDisplayProps {
 const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
   return (
     <div className="space-y-4">
+      <div className="flex items-center space-x-4 mb-6">
+        {cv.avatar_url ? (
+          <img
+            src={cv.avatar_url}
+            alt="Profile"
+            className="w-24 h-24 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center">
+            <Upload className="w-8 h-8 text-muted-foreground" />
+          </div>
+        )}
+        <div>
+          <h3 className="text-xl font-semibold">{cv.applicant_name}</h3>
+          <p className="text-muted-foreground">{cv.current_job_title}</p>
+        </div>
+      </div>
+
       <div>
         <h3 className="font-medium">Full Name</h3>
         <p>{cv.applicant_name}</p>
