@@ -1,6 +1,15 @@
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Edit, Upload } from "lucide-react";
+import {
+  Edit,
+  Upload,
+  Mail,
+  Phone,
+  MapPin,
+  Linkedin,
+  Github,
+  Globe,
+} from "lucide-react";
 
 interface CVDisplayProps {
   cv: {
@@ -31,142 +40,243 @@ interface CVDisplayProps {
 
 const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-4 mb-6">
+    <div className="max-w-4xl mx-auto p-6 bg-background shadow-lg rounded-lg">
+      {/* Profile Header */}
+      <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
         {cv.avatar_url ? (
           <img
             src={cv.avatar_url}
             alt="Profile"
-            className="w-24 h-24 rounded-full object-cover"
+            className="w-32 h-32 rounded-full object-cover border-4 border-primary"
           />
         ) : (
-          <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center">
-            <Upload className="w-8 h-8 text-muted-foreground" />
+          <div className="w-32 h-32 rounded-full bg-secondary flex items-center justify-center">
+            <Upload className="w-10 h-10 text-muted-foreground" />
           </div>
         )}
-        <div>
-          <h3 className="text-xl font-semibold">{cv.applicant_name}</h3>
-          <p className="text-muted-foreground">{cv.current_job_title}</p>
+        <div className="mt-4 md:mt-0 text-center md:text-left">
+          <h1 className="text-3xl font-bold text-foreground">
+            {cv.applicant_name}
+          </h1>
+          {cv.current_job_title && (
+            <p className="text-xl text-muted-foreground mt-2">
+              {cv.current_job_title}
+            </p>
+          )}
+          {cv.industry_experience && (
+            <p className="text-muted-foreground mt-1">{cv.industry_experience}</p>
+          )}
+          {/* Social Links */}
+          <div className="flex justify-center md:justify-start space-x-4 mt-4">
+            {cv.linkedin_profile && (
+              <a
+                href={cv.linkedin_profile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                <Linkedin className="w-6 h-6" />
+              </a>
+            )}
+            {cv.github_profile && (
+              <a
+                href={cv.github_profile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                <Github className="w-6 h-6" />
+              </a>
+            )}
+            {cv.portfolio_link && (
+              <a
+                href={cv.portfolio_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                <Globe className="w-6 h-6" />
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
-      <div>
-        <h3 className="font-medium">Full Name</h3>
-        <p>{cv.applicant_name}</p>
-      </div>
+      {/* Divider */}
+      <div className="border-b border-border my-6"></div>
 
-      <div>
-        <h3 className="font-medium">Contact Information</h3>
-        <div className="space-y-2">
-          <p>Email: {cv.email}</p>
-          <p>Phone: {cv.phone}</p>
-          <p>Address: {cv.address}</p>
+      {/* Details Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left Column */}
+        <div className="space-y-6">
+          {/* Contact Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              Contact Information
+            </h2>
+            <div className="space-y-2 text-foreground">
+              {cv.email && (
+                <p className="flex items-center">
+                  <Mail className="w-5 h-5 mr-2 text-primary" />
+                  {cv.email}
+                </p>
+              )}
+              {cv.phone && (
+                <p className="flex items-center">
+                  <Phone className="w-5 h-5 mr-2 text-primary" />
+                  {cv.phone}
+                </p>
+              )}
+              {cv.address && (
+                <p className="flex items-center">
+                  <MapPin className="w-5 h-5 mr-2 text-primary" />
+                  {cv.address}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Skills */}
+          <div>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              Skills
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {cv.skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Languages Known */}
+          {cv.languages_known && cv.languages_known.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-4">
+                Languages Known
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {cv.languages_known.map((language, index) => (
+                  <span
+                    key={index}
+                    className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm"
+                  >
+                    {language}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Education */}
+          {cv.education && (
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-4">
+                Education
+              </h2>
+              <p className="text-foreground">{cv.education}</p>
+            </div>
+          )}
+
+          {/* Certifications */}
+          {cv.certifications && (
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-4">
+                Certifications
+              </h2>
+              <p className="text-foreground">{cv.certifications}</p>
+            </div>
+          )}
         </div>
-      </div>
 
-      <div>
-        <h3 className="font-medium">Professional Links</h3>
-        <div className="space-y-2">
-          <p>LinkedIn: {cv.linkedin_profile}</p>
-          <p>GitHub: {cv.github_profile}</p>
-          <p>Portfolio: {cv.portfolio_link}</p>
-        </div>
-      </div>
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Professional Experience */}
+          <div>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              Professional Experience
+            </h2>
+            <p className="text-foreground">
+              <span className="font-medium">Years of Experience:</span>{" "}
+              {cv.years_experience} years
+            </p>
+            {cv.career_goals && (
+              <p className="text-foreground mt-2">{cv.career_goals}</p>
+            )}
+          </div>
 
-      <div>
-        <h3 className="font-medium">Current Position</h3>
-        <p>{cv.current_job_title}</p>
-      </div>
+          {/* Work Preferences */}
+          <div>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              Work Preferences
+            </h2>
+            <p className="text-foreground">
+              <span className="font-medium">Willing to Relocate:</span>{" "}
+              {cv.willingness_to_relocate ? "Yes" : "No"}
+            </p>
+            <p className="text-foreground">
+              <span className="font-medium">Available for Remote Work:</span>{" "}
+              {cv.availability_for_remote_work ? "Yes" : "No"}
+            </p>
+          </div>
 
-      <div>
-        <h3 className="font-medium">Years of Experience</h3>
-        <p>{cv.years_experience} years</p>
-      </div>
+          {/* Desired Salary */}
+          {cv.desired_salary && (
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-4">
+                Desired Salary
+              </h2>
+              <p className="text-foreground">{cv.desired_salary}</p>
+            </div>
+          )}
 
-      <div>
-        <h3 className="font-medium">Skills</h3>
-        <div className="flex flex-wrap gap-2">
-          {cv.skills.map((skill: string, index: number) => (
-            <span
-              key={index}
-              className="bg-secondary px-2 py-1 rounded-md text-sm"
+          {/* References */}
+          {cv.references && (
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-4">
+                References
+              </h2>
+              <p className="text-foreground">{cv.references}</p>
+            </div>
+          )}
+
+          {/* Application Status */}
+          <div>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              Application Status
+            </h2>
+            <p
+              className={`capitalize inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                cv.status === "accepted"
+                  ? "bg-green-100 text-green-800"
+                  : cv.status === "rejected"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-secondary text-secondary-foreground"
+              }`}
             >
-              {skill}
-            </span>
-          ))}
+              {cv.status}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div>
-        <h3 className="font-medium">Languages Known</h3>
-        <div className="flex flex-wrap gap-2">
-          {cv.languages_known?.map((language: string, index: number) => (
-            <span
-              key={index}
-              className="bg-secondary px-2 py-1 rounded-md text-sm"
-            >
-              {language}
-            </span>
-          ))}
-        </div>
+      {/* Divider */}
+      <div className="border-t border-border my-6"></div>
+
+      {/* Edit Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={onEdit}
+          className="flex items-center gap-2"
+        >
+          <Edit className="h-4 w-4" />
+          Edit CV
+        </Button>
       </div>
-
-      <div>
-        <h3 className="font-medium">Education</h3>
-        <p>{cv.education}</p>
-      </div>
-
-      <div>
-        <h3 className="font-medium">Certifications</h3>
-        <p>{cv.certifications}</p>
-      </div>
-
-      <div>
-        <h3 className="font-medium">References</h3>
-        <p>{cv.references}</p>
-      </div>
-
-    
-      <div>
-  <h3 className="font-medium">Desired Salary</h3>
-  <div className="flex flex-wrap gap-2">
-    <span className="bg-secondary px-2 py-1 rounded-md text-sm">
-      {cv.desired_salary}
-    </span>
-  </div>
-</div>
-
-      <div>
-        <h3 className="font-medium">Work Preferences</h3>
-        <div className="space-y-2">
-          <p>Willing to Relocate: {cv.willingness_to_relocate ? "Yes" : "No"}</p>
-          <p>Available for Remote Work: {cv.availability_for_remote_work ? "Yes" : "No"}</p>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-medium">Industry Experience</h3>
-        <p>{cv.industry_experience}</p>
-      </div>
-
-      <div>
-        <h3 className="font-medium">Career Goals</h3>
-        <p>{cv.career_goals}</p>
-      </div>
-
-      <div>
-        <h3 className="font-medium">Status</h3>
-        <p className="capitalize">{cv.status}</p>
-      </div>
-
-      <Button
-        variant="outline"
-        onClick={onEdit}
-        className="flex items-center gap-2"
-      >
-        <Edit className="h-4 w-4" />
-        Edit CV
-      </Button>
     </div>
   );
 };
