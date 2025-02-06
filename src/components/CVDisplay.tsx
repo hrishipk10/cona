@@ -107,10 +107,15 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
         <p>{cv.references}</p>
       </div>
 
+    
       <div>
-        <h3 className="font-medium">Desired Salary</h3>
-        <p>{cv.desired_salary}</p>
-      </div>
+  <h3 className="font-medium">Desired Salary</h3>
+  <div className="flex flex-wrap gap-2">
+    <span className="bg-secondary px-2 py-1 rounded-md text-sm">
+      {cv.desired_salary}
+    </span>
+  </div>
+</div>
 
       <div>
         <h3 className="font-medium">Work Preferences</h3>
