@@ -39,7 +39,10 @@ const Index = () => {
             <Button
               variant="secondary"
               className="w-full py-8 text-xl rounded-full"
-              onClick={() => navigate('/admin/login')}
+              onClick={() => {
+                console.log('Navigating to admin login');
+                navigate('/admin/login');
+              }}
             >
               admin
             </Button>
@@ -47,7 +50,10 @@ const Index = () => {
             <Button
               variant="secondary"
               className="w-full py-8 text-xl rounded-full"
-              onClick={() => navigate('/applicant/login')}
+              onClick={() => {
+                console.log('Navigating to applicant login');
+                navigate('/applicant/login');
+              }}
             >
               applicant
             </Button>
