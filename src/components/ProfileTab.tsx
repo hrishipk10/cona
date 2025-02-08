@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -114,7 +114,10 @@ const ProfileTab = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardContent className="pt-6">
+        <CardHeader>
+          <h3 className="text-2xl font-bold text-primary">Profile</h3>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-8">
             <ProfileHeader
               cv={cv}
