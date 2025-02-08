@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,24 @@ const LoginPage = ({ type }: LoginPageProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Add effect to check auth state
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate("/client/dashboard");
+      }
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/client/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -62,7 +81,7 @@ const LoginPage = ({ type }: LoginPageProps) => {
             email,
             password,
             options: {
-              emailRedirectTo: window.location.origin + '/client/dashboard'
+              emailRedirectTo: `${window.location.origin}/client/dashboard`
             }
           });
 
