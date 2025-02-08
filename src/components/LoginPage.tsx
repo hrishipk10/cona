@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,33 +9,37 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface LoginPageProps {
   type: "admin" | "applicant";
+  customAuthHandler?: (email: string, password: string) => Promise<boolean>;
+  defaultEmail?: string;
 }
 
-const LoginPage = ({ type }: LoginPageProps) => {
+const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(defaultEmail || "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Add effect to check auth state
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        navigate("/client/dashboard");
-      }
-    });
+    if (type === "applicant") {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          navigate("/client/dashboard");
+        }
+      });
 
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/client/dashboard");
-      }
-    });
+      // Check initial session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          navigate("/client/dashboard");
+        }
+      });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+      return () => subscription.unsubscribe();
+    }
+  }, [navigate, type]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -51,18 +54,15 @@ const LoginPage = ({ type }: LoginPageProps) => {
 
     try {
       if (type === "admin") {
-        if (email === "admin" && password === "admin") {
-          toast({
-            title: "Login successful",
-            description: "Welcome back, admin!",
-          });
-          navigate("/admin/dashboard");
-        } else {
-          toast({
-            title: "Login failed",
-            description: "Invalid admin credentials. Please try again.",
-            variant: "destructive",
-          });
+        if (customAuthHandler) {
+          const success = await customAuthHandler(email, password);
+          if (success) {
+            toast({
+              title: "Login successful",
+              description: "Welcome back, admin!",
+            });
+            navigate("/admin/dashboard");
+          }
         }
       } else {
         if (isSignUp) {
