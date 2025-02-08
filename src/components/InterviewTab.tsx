@@ -1,87 +1,129 @@
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { format, parseISO } from 'date-fns';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 
+const InterviewCard = ({ interview }: { interview: any }) => (
+  <Card className="border rounded-lg shadow-sm mb-4">
+    <CardContent className="p-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="font-semibold text-lg text-primary">
+            {format(parseISO(interview.scheduled_at), 'EEEE, MMMM do, yyyy')}
+          </p>
+          <p className="text-muted-foreground">
+            {format(parseISO(interview.scheduled_at), 'hh:mm a')}
+          </p>
+        </div>
+        <div className="text-right">
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              interview.status === "confirmed"
+                ? "bg-green-100 text-green-800"
+                : interview.status === "pending"
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-destructive/10 text-destructive"
+            }`}
+          >
+            {interview.status}
+          </span>
+          {interview.feedback && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Feedback: {interview.feedback}
+            </p>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const InterviewTab = () => {
-  const { data: interviews, isLoading } = useQuery({
-    queryKey: ['userInterviews'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user found');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-      const { data: cv } = await supabase
-        .from('cvs')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+  const fetchUserInterviews = async () => {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!user) throw new Error("No user found");
 
-      if (!cv) return [];
+    const { data: cv, error: cvError } = await supabase
+      .from("cvs")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (cvError) throw cvError;
+    if (!cv) return [];
 
-      const { data, error } = await supabase
-        .from('interviews')
-        .select('*')
-        .eq('cv_id', cv.id);
+    const { data: interviews, error: interviewsError } = await supabase
+      .from("interviews")
+      .select("*")
+      .eq("cv_id", cv.id);
+    if (interviewsError) throw interviewsError;
 
-      if (error) throw error;
-      return data;
-    },
+    return interviews;
+  };
+
+  const {
+    data: interviews,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["userInterviews"],
+    queryFn: fetchUserInterviews,
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spinner />
+      </div>
+    );
   }
+
+  if (isError) {
+    return (
+      <div className="text-destructive">
+        Error fetching interviews: {(error as Error).message}
+      </div>
+    );
+  }
+
+  const interviewsByDate = interviews?.filter((interview) => {
+    const interviewDate = new Date(interview.scheduled_at).toDateString();
+    return (
+      selectedDate && interviewDate === selectedDate.toDateString()
+    );
+  });
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <h3 className="text-lg font-semibold">Interview Schedule</h3>
+          <h3 className="text-2xl font-bold text-primary">Interview Schedule</h3>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <Calendar
-              mode="single"
-              selected={new Date()}
-              className="rounded-md border"
-            />
-            <div className="space-y-4">
-              {interviews?.map((interview) => (
-                <Card key={interview.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">
-                          {new Date(interview.scheduled_at).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(interview.scheduled_at).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium capitalize">{interview.status}</p>
-                        {interview.feedback && (
-                          <p className="text-sm text-muted-foreground">
-                            Feedback: {interview.feedback}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {interviews?.length === 0 && (
+          <div className="md:flex md:space-x-8">
+            <div className="md:w-1/3">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border"
+              />
+            </div>
+            <div className="md:w-2/3 mt-6 md:mt-0 space-y-4">
+              {interviewsByDate && interviewsByDate.length > 0 ? (
+                interviewsByDate.map((interview) => (
+                  <InterviewCard key={interview.id} interview={interview} />
+                ))
+              ) : (
                 <p className="text-center text-muted-foreground">
-                  No interviews scheduled
+                  No interviews scheduled on this date.
                 </p>
               )}
             </div>
