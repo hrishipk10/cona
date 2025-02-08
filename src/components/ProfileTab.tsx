@@ -2,18 +2,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import ProfileHeader from "./ProfileHeader";
+import ProfileDetails from "./ProfileDetails";
 
 const ProfileTab = () => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
-  const { data: cv, isLoading, refetch } = useQuery({
+  const { data: cv, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['userCV'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -76,62 +76,52 @@ const ProfileTab = () => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-6">
+              <Skeleton className="w-24 h-24 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-8">
+        <div className="inline-block p-4 rounded-lg bg-destructive/10 text-destructive">
+          Error loading profile: {(error as Error).message}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
-          <div className="space-y-6">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                {cv?.avatar_url ? (
-                  <img
-                    src={cv.avatar_url}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center">
-                    <Upload className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                )}
-                <Label
-                  htmlFor="avatar-upload"
-                  className="absolute bottom-0 right-0 p-1 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90"
-                >
-                  <Upload className="w-4 h-4" />
-                </Label>
-                <Input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                  disabled={uploading}
-                />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">{cv?.applicant_name}</h3>
-                <p className="text-muted-foreground">{cv?.email}</p>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div>
-                <Label>Current Job Title</Label>
-                <p className="text-sm text-muted-foreground">{cv?.current_job_title || 'Not specified'}</p>
-              </div>
-              <div>
-                <Label>Phone</Label>
-                <p className="text-sm text-muted-foreground">{cv?.phone || 'Not specified'}</p>
-              </div>
-              <div>
-                <Label>Address</Label>
-                <p className="text-sm text-muted-foreground">{cv?.address || 'Not specified'}</p>
-              </div>
-            </div>
+          <div className="space-y-8">
+            <ProfileHeader
+              cv={cv}
+              uploading={uploading}
+              handleAvatarUpload={handleAvatarUpload}
+            />
+            <ProfileDetails cv={cv} />
           </div>
         </CardContent>
       </Card>
