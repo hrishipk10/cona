@@ -26,49 +26,36 @@ const AdminLogin = () => {
   };
 
   const handleAdminAuth = async (email: string, password: string) => {
-    const { data: { user }, error } = await supabase.auth.signUp({
+    const { data: { user }, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      if (error.message.includes("User already registered")) {
-        // Try to sign in instead
-        const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      toast({
+        title: "Login failed",
+        description: "Invalid admin credentials",
+        variant: "destructive",
+      });
+      return false;
+    }
 
-        if (signInError) {
-          toast({
-            title: "Login failed",
-            description: "Invalid admin credentials",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        if (user) {
-          const isAdmin = await checkAdminStatus(user.id);
-          if (!isAdmin) {
-            toast({
-              title: "Access denied",
-              description: "This account does not have admin privileges",
-              variant: "destructive",
-            });
-            await supabase.auth.signOut();
-            return false;
-          }
-          return true;
-        }
-      } else {
+    if (user) {
+      const isAdmin = await checkAdminStatus(user.id);
+      if (!isAdmin) {
         toast({
-          title: "Login failed",
-          description: error.message,
+          title: "Access denied",
+          description: "This account does not have admin privileges",
           variant: "destructive",
         });
+        await supabase.auth.signOut();
         return false;
       }
+      toast({
+        title: "Login successful",
+        description: "Welcome back, admin!",
+      });
+      return true;
     }
 
     return false;
