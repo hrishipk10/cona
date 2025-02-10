@@ -7,11 +7,13 @@ import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { DashboardSummaryCards } from "@/components/admin/DashboardSummaryCards";
 import { TopCVsTable } from "@/components/admin/TopCVsTable";
 import { ExperienceClusterChart } from "@/components/admin/ExperienceClusterChart";
+import { DashboardMetrics } from "@/components/admin/DashboardMetrics";
+import { ApplicationTrendsChart } from "@/components/admin/ApplicationTrendsChart";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
+type Position = Database["public"]["Tables"]["positions"]["Row"];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ const AdminDashboard = () => {
     checkAdminStatus();
   }, [navigate, toast]);
 
-  const { data: cvs, isLoading } = useQuery({
+  const { data: cvs, isLoading: cvsLoading } = useQuery({
     queryKey: ["cvs"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -58,49 +60,61 @@ const AdminDashboard = () => {
     },
   });
 
-  if (isLoading) {
+  const { data: positions, isLoading: positionsLoading } = useQuery({
+    queryKey: ["positions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("positions")
+        .select("*");
+
+      if (error) throw error;
+      return data as Position[];
+    },
+  });
+
+  if (cvsLoading || positionsLoading) {
     return <div>Loading...</div>;
   }
 
-  const totalApplications = cvs?.length || 0;
-  const averageExperience = cvs 
-    ? cvs.reduce((acc, cv) => acc + cv.years_experience, 0) / cvs.length
-    : 0;
-  const acceptedApplications = cvs?.filter(cv => cv.status === 'accepted').length || 0;
-  const pendingApplications = cvs?.filter(cv => cv.status === 'pending').length || 0;
+  if (!cvs) return null;
 
-  const topCVsByRequirements = cvs?.slice(0, 5) || [];
-  const topCVsByExperience = [...(cvs || [])]
-    .sort((a, b) => b.years_experience - a.years_experience)
-    .slice(0, 5);
-
-  const experienceGroups = cvs?.reduce((acc, cv) => {
+  const experienceGroups = cvs.reduce((acc, cv) => {
     const group = `${Math.floor(cv.years_experience / 2) * 2}-${
       Math.floor(cv.years_experience / 2) * 2 + 2
     } years`;
     if (!acc[group]) acc[group] = [];
     acc[group].push(cv);
     return acc;
-  }, {} as Record<string, CV[]>) || {};
+  }, {} as Record<string, CV[]>);
+
+  const topCVsByRequirements = cvs.slice(0, 5);
+  const topCVsByExperience = [...cvs]
+    .sort((a, b) => b.years_experience - a.years_experience)
+    .slice(0, 5);
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-      <DashboardSummaryCards
-        totalApplications={totalApplications}
-        averageExperience={averageExperience}
-        acceptedApplications={acceptedApplications}
-        pendingApplications={pendingApplications}
-      />
+      <DashboardMetrics cvs={cvs} positions={positions} />
 
-      <Tabs defaultValue="dashboard" className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="cluster">Clusters</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="applications">Applications</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-4">
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ApplicationTrendsChart cvs={cvs} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Top CVs by Requirements Match</CardTitle>
@@ -109,7 +123,9 @@ const AdminDashboard = () => {
               <TopCVsTable cvs={topCVsByRequirements} title="Top CVs by Requirements Match" />
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="applications" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Most Experienced Candidates</CardTitle>
@@ -124,10 +140,10 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="cluster" className="space-y-4">
+        <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Experience Clusters</CardTitle>
+              <CardTitle>Experience Distribution</CardTitle>
             </CardHeader>
             <CardContent>
               <ExperienceClusterChart experienceGroups={experienceGroups} />

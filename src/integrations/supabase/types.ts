@@ -28,6 +28,7 @@ export type Database = {
         Row: {
           address: string | null
           applicant_name: string
+          application_date: string | null
           availability_for_remote_work: boolean | null
           avatar_url: string | null
           career_goals: string | null
@@ -43,6 +44,7 @@ export type Database = {
           languages_known: string[] | null
           linkedin_profile: string | null
           phone: string | null
+          pipeline_status: string | null
           portfolio_link: string | null
           rating: number | null
           references: string | null
@@ -57,6 +59,7 @@ export type Database = {
         Insert: {
           address?: string | null
           applicant_name: string
+          application_date?: string | null
           availability_for_remote_work?: boolean | null
           avatar_url?: string | null
           career_goals?: string | null
@@ -72,6 +75,7 @@ export type Database = {
           languages_known?: string[] | null
           linkedin_profile?: string | null
           phone?: string | null
+          pipeline_status?: string | null
           portfolio_link?: string | null
           rating?: number | null
           references?: string | null
@@ -86,6 +90,7 @@ export type Database = {
         Update: {
           address?: string | null
           applicant_name?: string
+          application_date?: string | null
           availability_for_remote_work?: boolean | null
           avatar_url?: string | null
           career_goals?: string | null
@@ -101,6 +106,7 @@ export type Database = {
           languages_known?: string[] | null
           linkedin_profile?: string | null
           phone?: string | null
+          pipeline_status?: string | null
           portfolio_link?: string | null
           rating?: number | null
           references?: string | null
@@ -176,6 +182,36 @@ export type Database = {
           message?: string
           read?: boolean | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      positions: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          id: string
+          requirements: string[] | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          requirements?: string[] | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          requirements?: string[] | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
