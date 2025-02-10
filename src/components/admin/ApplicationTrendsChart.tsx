@@ -27,36 +27,38 @@ export const ApplicationTrendsChart = ({ cvs }: ApplicationTrendsChartProps) => 
   }).reverse();
 
   return (
-    <div className="h-[300px]">
-      <ChartContainer
-        config={{
-          applications: {
-            theme: {
-              light: "hsl(var(--primary))",
-              dark: "hsl(var(--primary))",
+    <div className="w-full h-[300px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <ChartContainer
+          config={{
+            applications: {
+              theme: {
+                light: "hsl(var(--primary))",
+                dark: "hsl(var(--primary))",
+              },
             },
-          },
-        }}
-      >
-        <LineChart
-          data={last30Days}
-          margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
+          }}
         >
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 12 }}
-            interval="preserveStartEnd"
-          />
-          <YAxis />
-          <ChartTooltip />
-          <Line 
-            type="monotone" 
-            dataKey="applications" 
-            stroke="var(--color-applications)" 
-            strokeWidth={2}
-          />
-        </LineChart>
-      </ChartContainer>
+          <LineChart
+            data={last30Days}
+            margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+          >
+            <XAxis 
+              dataKey="date" 
+              tick={{ fontSize: 12 }}
+              interval="preserveStartEnd"
+            />
+            <YAxis />
+            <ChartTooltip />
+            <Line 
+              type="monotone" 
+              dataKey="applications" 
+              stroke="var(--color-applications)" 
+              strokeWidth={2}
+            />
+          </LineChart>
+        </ChartContainer>
+      </ResponsiveContainer>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import { TopCVsTable } from "@/components/admin/TopCVsTable";
 import { ExperienceClusterChart } from "@/components/admin/ExperienceClusterChart";
 import { DashboardMetrics } from "@/components/admin/DashboardMetrics";
 import { ApplicationTrendsChart } from "@/components/admin/ApplicationTrendsChart";
+import { DashboardSummaryCards } from "@/components/admin/DashboardSummaryCards";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Position = Database["public"]["Tables"]["positions"]["Row"];
@@ -92,11 +93,21 @@ const AdminDashboard = () => {
     .sort((a, b) => b.years_experience - a.years_experience)
     .slice(0, 5);
 
+  const totalApplications = cvs.length;
+  const averageExperience = cvs.reduce((acc, cv) => acc + cv.years_experience, 0) / cvs.length;
+  const acceptedApplications = cvs.filter(cv => cv.status === 'accepted').length;
+  const pendingApplications = cvs.filter(cv => cv.status === 'pending').length;
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-      <DashboardMetrics cvs={cvs} positions={positions} />
+      <DashboardSummaryCards 
+        totalApplications={totalApplications}
+        averageExperience={averageExperience}
+        acceptedApplications={acceptedApplications}
+        pendingApplications={pendingApplications}
+      />
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
@@ -108,21 +119,14 @@ const AdminDashboard = () => {
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Application Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ApplicationTrendsChart cvs={cvs} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Top CVs by Requirements Match</CardTitle>
             </CardHeader>
             <CardContent>
               <TopCVsTable cvs={topCVsByRequirements} title="Top CVs by Requirements Match" />
             </CardContent>
           </Card>
+
+          <DashboardMetrics cvs={cvs} positions={positions} />
         </TabsContent>
 
         <TabsContent value="applications" className="space-y-4">
@@ -143,9 +147,18 @@ const AdminDashboard = () => {
         <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
+              <CardTitle>Application Trends</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <ApplicationTrendsChart cvs={cvs} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Experience Distribution</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <ExperienceClusterChart experienceGroups={experienceGroups} />
             </CardContent>
           </Card>
