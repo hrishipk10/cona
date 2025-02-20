@@ -3,14 +3,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { TopCVsTable } from "@/components/admin/TopCVsTable";
 import { ExperienceClusterChart } from "@/components/admin/ExperienceClusterChart";
 import { ApplicationTrendsChart } from "@/components/admin/ApplicationTrendsChart";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
+import CVRanking from "@/components/admin/CVRanking";
+import Clustering from "@/components/admin/Clustering";
+import Reports from "@/components/admin/Reports";
 import { Button } from "@/components/ui/button";
+import { BarChart, Settings } from "lucide-react";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Position = Database["public"]["Tables"]["positions"]["Row"];
@@ -113,6 +117,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="ranking">CV Ranking</TabsTrigger>
+          <TabsTrigger value="clustering">Clustering</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -161,6 +169,50 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="pt-4">
               <ExperienceClusterChart experienceGroups={experienceGroups} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ranking" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>CV Ranking</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CVRanking cvs={cvs} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="clustering" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Clustering</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Clustering clusters={experienceGroups} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Reports cvs={cvs} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Add your settings component here */}
             </CardContent>
           </Card>
         </TabsContent>
