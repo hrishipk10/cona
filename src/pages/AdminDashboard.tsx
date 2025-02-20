@@ -1,17 +1,16 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { TopCVsTable } from "@/components/admin/TopCVsTable";
 import { ExperienceClusterChart } from "@/components/admin/ExperienceClusterChart";
-import { DashboardMetrics } from "@/components/admin/DashboardMetrics";
 import { ApplicationTrendsChart } from "@/components/admin/ApplicationTrendsChart";
-import { DashboardSummaryCards } from "@/components/admin/DashboardSummaryCards";
+import { DashboardOverview } from "@/components/admin/DashboardOverview";
+import { Button } from "@/components/ui/button";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Position = Database["public"]["Tables"]["positions"]["Row"];
@@ -80,9 +79,7 @@ const AdminDashboard = () => {
   if (!cvs) return null;
 
   const experienceGroups = cvs.reduce((acc, cv) => {
-    const group = `${Math.floor(cv.years_experience / 2) * 2}-${
-      Math.floor(cv.years_experience / 2) * 2 + 2
-    } years`;
+    const group = `${Math.floor(cv.years_experience / 2) * 2}-${Math.floor(cv.years_experience / 2) * 2 + 2} years`;
     if (!acc[group]) acc[group] = [];
     acc[group].push(cv);
     return acc;
@@ -102,7 +99,9 @@ const AdminDashboard = () => {
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-      <DashboardSummaryCards 
+      <DashboardOverview 
+        cvs={cvs}
+        positions={positions}
         totalApplications={totalApplications}
         averageExperience={averageExperience}
         acceptedApplications={acceptedApplications}
@@ -122,11 +121,13 @@ const AdminDashboard = () => {
               <CardTitle>Top CVs by Requirements Match</CardTitle>
             </CardHeader>
             <CardContent>
-              <TopCVsTable cvs={topCVsByRequirements} title="Top CVs by Requirements Match" />
+              <TopCVsTable 
+                cvs={topCVsByRequirements} 
+                title="Top CVs by Requirements Match"
+                showSkills={false} 
+              />
             </CardContent>
           </Card>
-
-          <DashboardMetrics cvs={cvs} positions={positions} />
         </TabsContent>
 
         <TabsContent value="applications" className="space-y-4">
@@ -137,7 +138,7 @@ const AdminDashboard = () => {
             <CardContent>
               <TopCVsTable 
                 cvs={topCVsByExperience} 
-                title="Most Experienced Candidates" 
+                title="Most Experienced Candidates"
                 showSkills={true} 
               />
             </CardContent>

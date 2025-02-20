@@ -7,6 +7,7 @@ import AdminLogin from "./pages/AdminLogin";
 import ApplicantLogin from "./pages/ApplicantLogin";
 import ClientDashboard from "./pages/ClientDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import CVDetail from "./pages/CVDetail";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/cv/:id" element={<CVDetail />} />
           <Route path="/applicant/login" element={<ApplicantLogin />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="*" element={<NotFound />} />
