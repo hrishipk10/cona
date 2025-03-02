@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,13 +110,11 @@ const AdminDashboard = () => {
 
   if (!cvs) return null;
 
-  // Calculate stats for dashboard
   const totalApplications = cvs.length;
   const pendingApplications = cvs.filter(cv => cv.status === 'pending').length;
   const acceptedApplications = cvs.filter(cv => cv.status === 'accepted').length;
   const averageExperience = cvs.reduce((acc, cv) => acc + cv.years_experience, 0) / cvs.length;
 
-  // Recent CVs data - sort by application_date or created_at, take the most recent 4
   const recentCVs = [...cvs]
     .sort((a, b) => {
       const dateA = a.application_date || a.created_at || '';
@@ -126,7 +123,6 @@ const AdminDashboard = () => {
     })
     .slice(0, 4);
 
-  // Get upcoming interviews
   const upcomingInterviews = interviews 
     ? [...interviews]
         .filter(interview => interview.status === 'scheduled')
@@ -134,20 +130,15 @@ const AdminDashboard = () => {
         .slice(0, 4)
     : [];
 
-  // Calculate top performers
-  // Create a score based on skills count, years of experience, and recommendations match
   const topPerformers = [...cvs]
     .map(cv => {
-      // Calculate a score based on multiple factors
-      const skillsScore = (cv.skills?.length || 0) * 2; // Each skill worth 2 points
-      const experienceScore = cv.years_experience * 5; // Each year worth 5 points
-      const matchScore = cv.requirements_match || 0; // Direct match percentage
+      const skillsScore = (cv.skills?.length || 0) * 2;
+      const experienceScore = cv.years_experience * 5;
+      const matchScore = cv.requirements_match || 0;
       
-      // Additional points for certifications and references
       const certificationBonus = cv.certifications ? 15 : 0;
       const referencesBonus = cv.references ? 10 : 0;
       
-      // Calculate total score
       const totalScore = skillsScore + experienceScore + matchScore + certificationBonus + referencesBonus;
       
       return {
@@ -158,20 +149,11 @@ const AdminDashboard = () => {
     .sort((a, b) => b.performanceScore - a.performanceScore)
     .slice(0, 5);
 
-  // Experience distribution data for pie chart
-  const experienceGroups = cvs.reduce((acc, cv) => {
-    const group = `${Math.floor(cv.years_experience / 2) * 2}-${Math.floor(cv.years_experience / 2) * 2 + 2} years`;
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(cv);
-    return acc;
-  }, {} as Record<string, CV[]>);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
   };
 
-  // Calculate date/time for display
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     
@@ -192,7 +174,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="bg-primary relative hidden md:flex flex-col items-center justify-center p-8 min-h-screen">
-      {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-[88px] bg-black flex flex-col items-center py-8 text-white">
         <div className="mb-12">
           <span className="text-xl font-bold">Cona</span>
@@ -213,25 +194,22 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="ml-[88px] p-6">
-        {/* Header */}
         <div className="bg-secondary backdrop-blur rounded-xl p-6 mb-6">
-            <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
             <h1 className="text-foreground-secondary font-bold">Good morning, James!</h1>
             <div className="flex items-center space-x-4">
               <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 Logout
               </Button>
-                <Avatar className="bg-foreground">
+              <Avatar className="bg-foreground">
                 <AvatarImage src="/avatars/batman.jpg" />
                 <AvatarFallback>JD</AvatarFallback>
-                </Avatar>
+              </Avatar>
             </div>
           </div>
 
-          {/* Stats cards */}
           <div className="grid grid-cols-4 gap-4 mt-6">
             <Card className="bg-white/80 backdrop-blur border-none shadow-none">
               <CardHeader className="flex flex-row items-center justify-between p-4">
@@ -286,7 +264,6 @@ const AdminDashboard = () => {
             </Card>
           </div>
 
-          {/* Navigation arrows */}
           <div className="flex justify-center mt-4">
             <Button variant="ghost" size="icon">
               <ChevronLeft className="h-5 w-5" />
@@ -297,11 +274,107 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Main dashboard content */}
         <div className="grid grid-cols-3 gap-6">
-          {/* Left column */}
           <div className="col-span-2 space-y-6">
-            {/* Recent CVs - replacing the "Recent emails" section */}
+            <Card className="bg-secondary backdrop-blur border-none">
+              <CardHeader>
+                <CardTitle>Top Performers</CardTitle>
+                <CardDescription>Outstanding candidates by skills, experience and match</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {topPerformers.map((cv, index) => (
+                    <div key={index} className="flex items-center">
+                      <Avatar className="h-10 w-10 mr-4 bg-black text-white">
+                        {cv.avatar_url ? (
+                          <AvatarImage src={cv.avatar_url} alt={cv.applicant_name} />
+                        ) : (
+                          <AvatarFallback>{cv.applicant_name.charAt(0)}</AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-medium">{cv.applicant_name}</p>
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-sm text-gray-500">
+                            {cv.current_job_title || "Applicant"} • {cv.years_experience} yrs
+                          </span>
+                          <span className="text-sm text-gray-500 ml-1">
+                            • {cv.skills.length} skills
+                          </span>
+                          {cv.certifications && (
+                            <span className="text-sm text-green-600 ml-1">• Certified</span>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-2"
+                        onClick={() => navigate(`/admin/cv/${cv.id}`)}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => navigate("/admin/applications")}
+                >
+                  View all candidates
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="bg-secondary backdrop-blur border-none">
+              <CardHeader>
+                <CardTitle>Upcoming Interviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {upcomingInterviews.length > 0 ? (
+                    upcomingInterviews.map((interview, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className="bg-black text-white rounded-full p-2 mr-4">
+                          <Calendar className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{interview.cvs?.applicant_name || "Candidate"}</p>
+                          <div className="flex items-center text-sm text-gray-500">
+                            {new Date(interview.scheduled_at).toLocaleDateString()} at {new Date(interview.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => navigate(`/admin/interviews/${interview.id}`)}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500 py-4">No upcoming interviews scheduled</p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => navigate("/admin/interviews")}
+                >
+                  Manage all interviews
+                </Button>
+              </CardFooter>
+            </Card>
+
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Recent Applications</CardTitle>
@@ -350,110 +423,6 @@ const AdminDashboard = () => {
                   onClick={() => navigate("/admin/applications")}
                 >
                   View all applications
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-
-          {/* Right column - REPLACING To-Do list and Skills Gap with Top Performers and Interviews */}
-          <div className="space-y-6">
-            {/* Upcoming Interviews - new section replacing To-Do list */}
-            <Card className="bg-secondary backdrop-blur border-none">
-              <CardHeader>
-                <CardTitle>Upcoming Interviews</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {upcomingInterviews.length > 0 ? (
-                    upcomingInterviews.map((interview, index) => (
-                      <div key={index} className="flex items-center">
-                        <div className="bg-black text-white rounded-full p-2 mr-4">
-                          <Calendar className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{interview.cvs?.applicant_name || "Candidate"}</p>
-                          <div className="flex items-center text-sm text-gray-500">
-                            {new Date(interview.scheduled_at).toLocaleDateString()} at {new Date(interview.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="ml-2"
-                          onClick={() => navigate(`/admin/interviews/${interview.id}`)}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-gray-500 py-4">No upcoming interviews scheduled</p>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={() => navigate("/admin/interviews")}
-                >
-                  Manage all interviews
-                </Button>
-              </CardFooter>
-            </Card>
-
-            {/* Top Performers - enhanced section */}
-            <Card className="bg-secondary backdrop-blur border-none">
-              <CardHeader>
-                <CardTitle>Top Performers</CardTitle>
-                <CardDescription>Outstanding candidates by skills, experience and match</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topPerformers.map((cv, index) => (
-                    <div key={index} className="flex items-center">
-                      <div className="bg-black text-white rounded-full p-2 mr-4">
-                        {index === 0 ? (
-                          <Medal className="h-5 w-5" />
-                        ) : index === 1 ? (
-                          <Award className="h-5 w-5" />
-                        ) : (
-                          <Star className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{cv.applicant_name}</p>
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-sm text-gray-500">
-                            {cv.current_job_title || "Applicant"} • {cv.years_experience} yrs
-                          </span>
-                          <span className="text-sm text-gray-500 ml-1">
-                            • {cv.skills.length} skills
-                          </span>
-                          {cv.certifications && (
-                            <span className="text-sm text-green-600 ml-1">• Certified</span>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="ml-2"
-                        onClick={() => navigate(`/admin/cv/${cv.id}`)}
-                      >
-                        View
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={() => navigate("/admin/applications")}
-                >
-                  View all candidates
                 </Button>
               </CardFooter>
             </Card>
