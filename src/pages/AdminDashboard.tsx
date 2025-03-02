@@ -27,7 +27,8 @@ import {
   Calendar,
   Hourglass,
   Medal,
-  Award
+  Award,
+  Star
 } from "lucide-react";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
@@ -133,26 +134,29 @@ const AdminDashboard = () => {
         .slice(0, 4)
     : [];
 
-  // Calculate skill gaps
-  const skillGapAnalysis = positions?.reduce((acc, position) => {
-    const requiredSkills = position.requirements || [];
-    const matchingCVs = cvs.filter(cv => {
-      const candidateSkills = cv.skills || [];
-      return requiredSkills.some(skill => candidateSkills.includes(skill));
-    });
-    
-    const missingSkills = requiredSkills.filter(skill => {
-      return !cvs.some(cv => (cv.skills || []).includes(skill));
-    });
-    
-    acc.push({
-      position: position.title,
-      skillGaps: missingSkills,
-      matchRate: requiredSkills.length ? matchingCVs.length / cvs.length * 100 : 0
-    });
-    
-    return acc;
-  }, [] as Array<{position: string, skillGaps: string[], matchRate: number}>);
+  // Calculate top performers
+  // Create a score based on skills count, years of experience, and recommendations match
+  const topPerformers = [...cvs]
+    .map(cv => {
+      // Calculate a score based on multiple factors
+      const skillsScore = (cv.skills?.length || 0) * 2; // Each skill worth 2 points
+      const experienceScore = cv.years_experience * 5; // Each year worth 5 points
+      const matchScore = cv.requirements_match || 0; // Direct match percentage
+      
+      // Additional points for certifications and references
+      const certificationBonus = cv.certifications ? 15 : 0;
+      const referencesBonus = cv.references ? 10 : 0;
+      
+      // Calculate total score
+      const totalScore = skillsScore + experienceScore + matchScore + certificationBonus + referencesBonus;
+      
+      return {
+        ...cv,
+        performanceScore: totalScore
+      };
+    })
+    .sort((a, b) => b.performanceScore - a.performanceScore)
+    .slice(0, 5);
 
   // Experience distribution data for pie chart
   const experienceGroups = cvs.reduce((acc, cv) => {
@@ -351,7 +355,7 @@ const AdminDashboard = () => {
             </Card>
           </div>
 
-          {/* Right column - REPLACING To-Do list and Board meeting with more relevant content */}
+          {/* Right column - REPLACING To-Do list and Skills Gap with Top Performers and Interviews */}
           <div className="space-y-6">
             {/* Upcoming Interviews - new section replacing To-Do list */}
             <Card className="bg-secondary backdrop-blur border-none">
@@ -398,75 +402,38 @@ const AdminDashboard = () => {
               </CardFooter>
             </Card>
 
-            {/* Skills Gap Analysis - new section replacing Board meeting */}
-            <Card className="bg-secondary backdrop-blur border-none">
-              <CardHeader>
-                <CardTitle>Skills Gap Analysis</CardTitle>
-                <CardDescription>Missing skills in candidate pool</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {skillGapAnalysis && skillGapAnalysis.length > 0 ? (
-                  <div className="space-y-4">
-                    {skillGapAnalysis.slice(0, 2).map((position, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">{position.position}</h4>
-                          <span className="text-sm text-gray-500">
-                            {position.matchRate.toFixed(0)}% match rate
-                          </span>
-                        </div>
-                        <Progress value={position.matchRate} className="h-2" />
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {position.skillGaps.slice(0, 3).map((skill, idx) => (
-                            <span 
-                              key={idx} 
-                              className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                          {position.skillGaps.length > 3 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                              +{position.skillGaps.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-4">No skill gaps detected</p>
-                )}
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={() => navigate("/admin/positions")}
-                >
-                  View all positions
-                </Button>
-              </CardFooter>
-            </Card>
-
-            {/* Top Performers - new section */}
+            {/* Top Performers - enhanced section */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Top Performers</CardTitle>
-                <CardDescription>Highest rated candidates</CardDescription>
+                <CardDescription>Outstanding candidates by skills, experience and match</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {cvs.filter(cv => cv.status === 'accepted').slice(0, 3).map((cv, index) => (
+                  {topPerformers.map((cv, index) => (
                     <div key={index} className="flex items-center">
                       <div className="bg-black text-white rounded-full p-2 mr-4">
-                        <Award className="h-5 w-5" />
+                        {index === 0 ? (
+                          <Medal className="h-5 w-5" />
+                        ) : index === 1 ? (
+                          <Award className="h-5 w-5" />
+                        ) : (
+                          <Star className="h-5 w-5" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">{cv.applicant_name}</p>
-                        <p className="text-sm text-gray-500">
-                          {cv.current_job_title || "Applicant"} • Match: {cv.requirements_match?.toFixed(0) || 0}%
-                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-sm text-gray-500">
+                            {cv.current_job_title || "Applicant"} • {cv.years_experience} yrs
+                          </span>
+                          <span className="text-sm text-gray-500 ml-1">
+                            • {cv.skills.length} skills
+                          </span>
+                          {cv.certifications && (
+                            <span className="text-sm text-green-600 ml-1">• Certified</span>
+                          )}
+                        </div>
                       </div>
                       <Button
                         variant="outline"
@@ -480,6 +447,15 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => navigate("/admin/applications")}
+                >
+                  View all candidates
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         </div>
