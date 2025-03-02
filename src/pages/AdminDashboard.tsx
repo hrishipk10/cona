@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -115,6 +116,7 @@ const AdminDashboard = () => {
   const acceptedApplications = cvs.filter(cv => cv.status === 'accepted').length;
   const averageExperience = cvs.reduce((acc, cv) => acc + cv.years_experience, 0) / cvs.length;
 
+  // Recent applications data
   const recentCVs = [...cvs]
     .sort((a, b) => {
       const dateA = a.application_date || a.created_at || '';
@@ -123,6 +125,7 @@ const AdminDashboard = () => {
     })
     .slice(0, 4);
 
+  // Upcoming interviews data
   const upcomingInterviews = interviews 
     ? [...interviews]
         .filter(interview => interview.status === 'scheduled')
@@ -130,6 +133,7 @@ const AdminDashboard = () => {
         .slice(0, 4)
     : [];
 
+  // Top performers data
   const topPerformers = [...cvs]
     .map(cv => {
       const skillsScore = (cv.skills?.length || 0) * 2;
@@ -148,6 +152,14 @@ const AdminDashboard = () => {
     })
     .sort((a, b) => b.performanceScore - a.performanceScore)
     .slice(0, 5);
+
+  // Experience distribution data for pie chart
+  const experienceGroups = cvs.reduce((acc, cv) => {
+    const group = `${Math.floor(cv.years_experience / 2) * 2}-${Math.floor(cv.years_experience / 2) * 2 + 2} years`;
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(cv);
+    return acc;
+  }, {} as Record<string, CV[]>);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -276,6 +288,18 @@ const AdminDashboard = () => {
 
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2 space-y-6">
+            {/* Application Trends Chart */}
+            <Card className="bg-secondary backdrop-blur border-none">
+              <CardHeader>
+                <CardTitle>Application Trends</CardTitle>
+                <CardDescription>Last 30 days application activity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ApplicationTrendsChart cvs={cvs} />
+              </CardContent>
+            </Card>
+
+            {/* Top Performers */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Top Performers</CardTitle>
@@ -331,6 +355,10 @@ const AdminDashboard = () => {
           </div>
 
           <div className="space-y-6">
+            {/* Experience Distribution Chart */}
+            <ExperienceClusterChart experienceGroups={experienceGroups} />
+
+            {/* Upcoming Interviews */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Upcoming Interviews</CardTitle>
@@ -375,6 +403,7 @@ const AdminDashboard = () => {
               </CardFooter>
             </Card>
 
+            {/* Recent Applications */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Recent Applications</CardTitle>
