@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +22,6 @@ import {
   Briefcase,
   CheckCircle,
   Clock as ClockIcon,
-  
   LogOut
 } from "lucide-react";
 
@@ -98,37 +98,14 @@ const AdminDashboard = () => {
   const acceptedApplications = cvs.filter(cv => cv.status === 'accepted').length;
   const averageExperience = cvs.reduce((acc, cv) => acc + cv.years_experience, 0) / cvs.length;
 
-  // Invoices stats
-  const overdueInvoices = 6;
-  const overdueInvoicesGrowth = 2.7;
-
-  // Recent emails data
-  const recentEmails = [
-    { 
-      sender: "Hannah Morgan", 
-      subject: "Meeting scheduled", 
-      time: "1:24 PM", 
-      avatar: "/avatars/hannah.jpg" 
-    },
-    { 
-      sender: "Megan Clark", 
-      subject: "Update on marketing campaign", 
-      time: "12:32 PM", 
-      avatar: "/avatars/megan.jpg" 
-    },
-    { 
-      sender: "Brandon Williams", 
-      subject: "Designly 2.0 is about to launch", 
-      time: "Yesterday at 8:57 PM", 
-      avatar: "/avatars/brandon.jpg" 
-    },
-    { 
-      sender: "Reid Smith", 
-      subject: "My friend Julie loves Dappr!", 
-      time: "Yesterday at 8:49 PM", 
-      avatar: "/avatars/reid.jpg" 
-    }
-  ];
+  // Recent CVs data - sort by application_date or created_at, take the most recent 4
+  const recentCVs = [...cvs]
+    .sort((a, b) => {
+      const dateA = a.application_date || a.created_at || '';
+      const dateB = b.application_date || b.created_at || '';
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    })
+    .slice(0, 4);
 
   // To-do list
   const todoList = [
@@ -149,6 +126,25 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
+  };
+
+  // Calculate date/time for display
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 24) {
+      return diffInHours < 1 
+        ? "Just now" 
+        : `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    } else if (diffInHours < 48) {
+      return "Yesterday";
+    } else {
+      return date.toLocaleDateString();
+    }
   };
 
   return (
@@ -262,7 +258,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-3 gap-6">
           {/* Left column */}
           <div className="col-span-2 space-y-6">
-            {/* Application Trends chart (renamed from Revenue) */}
+            {/* Application Trends chart */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Application Trends</CardTitle>
@@ -273,47 +269,63 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Invoices overdue */}
+            {/* Recent CVs - replacing the "Recent emails" section */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
-                <CardTitle>Invoices overdue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-end">
-                  <h2 className="text-5xl font-bold">{overdueInvoices}</h2>
-                  <span className="ml-2 text-red-500 font-medium">+{overdueInvoicesGrowth}%</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent emails */}
-            <Card className="bg-secondary backdrop-blur border-none">
-              <CardHeader>
-                <CardTitle>Recent emails</CardTitle>
+                <CardTitle>Recent Applications</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentEmails.map((email, index) => (
-                    <div key={index} className="flex items-center">
+                  {recentCVs.map((cv, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                      onClick={() => navigate(`/admin/cv/${cv.id}`)}
+                    >
                       <Avatar className="h-10 w-10 mr-4">
-                        <AvatarImage src={email.avatar} />
-                        <AvatarFallback>{email.sender.charAt(0)}</AvatarFallback>
+                        {cv.avatar_url ? (
+                          <AvatarImage src={cv.avatar_url} />
+                        ) : (
+                          <AvatarFallback>{cv.applicant_name.charAt(0)}</AvatarFallback>
+                        )}
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-medium">{email.sender}</p>
-                        <p className="text-sm text-gray-500">{email.subject}</p>
+                        <p className="font-medium">{cv.applicant_name}</p>
+                        <p className="text-sm text-gray-500">{cv.current_job_title || "Applicant"} • {cv.years_experience} years</p>
                       </div>
-                      <span className="text-sm text-gray-500">{email.time}</span>
+                      <div>
+                        <span className="text-sm text-gray-500">{formatDate(cv.application_date || cv.created_at)}</span>
+                        <span
+                          className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            cv.status === 'accepted'
+                              ? 'bg-green-100 text-green-800'
+                              : cv.status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {cv.status}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
+              <CardFooter className="pt-0">
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => navigate("/admin/applications")}
+                >
+                  View all applications
+                </Button>
+              </CardFooter>
             </Card>
           </div>
 
           {/* Right column */}
           <div className="space-y-6">
-            {/* Experience Distribution Pie Chart (replacing Formation Status) */}
+            {/* Experience Distribution Pie Chart */}
             <ExperienceClusterChart experienceGroups={experienceGroups} />
 
             {/* To-do list */}
