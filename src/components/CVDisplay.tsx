@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Edit,
@@ -40,7 +39,7 @@ interface CVDisplayProps {
 
 const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-background shadow-lg rounded-lg">
+    <div className="max-w-4xl mx-auto p-6 bg-secondary shadow-lg rounded-lg">
       {/* Profile Header */}
       <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
         {cv.avatar_url ? (
@@ -54,7 +53,7 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
             <Upload className="w-10 h-10 text-muted-foreground" />
           </div>
         )}
-        <div className="mt-4 md:mt-0 text-center md:text-left">
+        <div className="mt-4 md:mt-0 text-center md:text-left flex-1">
           <h1 className="text-3xl font-bold text-foreground">
             {cv.applicant_name}
           </h1>
@@ -99,6 +98,23 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
               </a>
             )}
           </div>
+        </div>
+        {/* Application Status */}
+        <div className="mt-4 md:mt-0 text-center md:text-right">
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            Application Status
+          </h2>
+          <p
+            className={`capitalize inline-block px-3 py-1 rounded-full text-sm font-medium ${
+              cv.status === "accepted"
+                ? "bg-green-100 text-green-800"
+                : cv.status === "rejected"
+                ? "bg-destructive/10 text-red-800"
+                : "bg-background text-red-400"
+            }`}
+          >
+            {cv.status}
+          </p>
         </div>
       </div>
 
@@ -145,7 +161,7 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
               {cv.skills.map((skill, index) => (
                 <span
                   key={index}
-                  className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm"
+                  className="bg-primary text-background px-3 py-1 rounded-full text-sm"
                 >
                   {skill}
                 </span>
@@ -163,7 +179,7 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
                 {cv.languages_known.map((language, index) => (
                   <span
                     key={index}
-                    className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm"
+                    className="bg-primary text-background px-3 py-1 rounded-full text-sm"
                   >
                     {language}
                   </span>
@@ -230,7 +246,11 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
               <h2 className="text-xl font-semibold text-primary mb-4">
                 Desired Salary
               </h2>
-              <p className="text-foreground">{cv.desired_salary}</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-primary text-background px-3 py-1 rounded-full text-sm">
+                  {cv.desired_salary}
+                </span>
+              </div>
             </div>
           )}
 
@@ -243,24 +263,6 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
               <p className="text-foreground">{cv.references}</p>
             </div>
           )}
-
-          {/* Application Status */}
-          <div>
-            <h2 className="text-xl font-semibold text-primary mb-4">
-              Application Status
-            </h2>
-            <p
-              className={`capitalize inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                cv.status === "accepted"
-                  ? "bg-green-100 text-green-800"
-                  : cv.status === "rejected"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {cv.status}
-            </p>
-          </div>
         </div>
       </div>
 

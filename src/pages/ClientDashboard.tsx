@@ -35,7 +35,9 @@ const ClientDashboard = () => {
       return data;
     },
   });
-
+  interface CVDisplayProps {
+    cv: {
+      applicant_name: string;}}
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -58,11 +60,11 @@ const ClientDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="min-h-screen bg-primary p-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-semibold text-primary">
-            {existingCV ? 'Your Dashboard' : 'Submit Your CV'}
+          <h1 className="text-4xl font-semibold text-secondary">
+            {existingCV ? `Hello ${existingCV.applicant_name}` : 'Submit Your CV'}
           </h1>
           <Button
             variant="ghost"

@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format, parseISO } from 'date-fns';
@@ -8,14 +7,14 @@ import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 
 const InterviewCard = ({ interview }: { interview: any }) => (
-  <Card className="border rounded-lg shadow-sm mb-4">
+  <Card className="border rounded-lg shadow-sm mb-4 bg-background">
     <CardContent className="p-4">
       <div className="flex justify-between items-center">
         <div>
           <p className="font-semibold text-lg text-primary">
             {format(parseISO(interview.scheduled_at), 'EEEE, MMMM do, yyyy')}
           </p>
-          <p className="text-muted-foreground">
+          <p className="text-muted-background">
             {format(parseISO(interview.scheduled_at), 'hh:mm a')}
           </p>
         </div>
@@ -102,7 +101,7 @@ const InterviewTab = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-background">
         <CardHeader>
           <h3 className="text-2xl font-bold text-primary">Interview Schedule</h3>
         </CardHeader>
@@ -113,7 +112,7 @@ const InterviewTab = () => {
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                className="rounded-md border"
+                className="rounded-md border bg-background"
               />
             </div>
             <div className="md:w-2/3 mt-6 md:mt-0 space-y-4">

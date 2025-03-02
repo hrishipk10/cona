@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { User2, Lock } from "lucide-react";
+import { User2, Lock, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -173,18 +173,26 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
       <div className="bg-background flex items-center justify-center p-8">
         <Card className="w-full max-w-md bg-white/80 backdrop-blur">
           <CardHeader>
-            <h2 className="text-3xl font-semibold text-center text-primary mb-2">
-              {type === "admin" 
-                ? "Admin Login" 
-                : isSignUp ? "Create Account" : "Applicant Login"}
-            </h2>
-            <p className="text-muted-foreground text-center">
-              {type === "admin"
-                ? "Access the CV management dashboard"
-                : isSignUp 
-                  ? "Sign up to submit your CV"
-                  : "Login to track your application"}
-            </p>
+            <div className="flex justify-between items-center">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+                <ArrowLeft className="h-6 w-6 text-primary" />
+              </Button>
+              <div className="text-center flex-1">
+                <h2 className="text-3xl font-semibold text-primary mb-2">
+                  {type === "admin" 
+                    ? "Admin Login" 
+                    : isSignUp ? "Create Account" : "Applicant Login"}
+                </h2>
+                <p className="text-muted-foreground">
+                  {type === "admin"
+                    ? "Access the CV management dashboard"
+                    : isSignUp 
+                      ? "Sign up to submit your CV"
+                      : "Login to track your application"}
+                </p>
+              </div>
+              <div className="w-6"></div> {/* Placeholder to balance the layout */}
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleAuth} className="space-y-4">
