@@ -12,6 +12,7 @@ import { ExperienceClusterChart } from "@/components/admin/ExperienceClusterChar
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {  
   ChevronLeft, 
   ChevronRight, 
@@ -22,11 +23,16 @@ import {
   Briefcase,
   CheckCircle,
   Clock as ClockIcon,
-  LogOut
+  LogOut,
+  Calendar,
+  Hourglass,
+  Medal,
+  Award
 } from "lucide-react";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Position = Database["public"]["Tables"]["positions"]["Row"];
+type Interview = Database["public"]["Tables"]["interviews"]["Row"];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -86,7 +92,19 @@ const AdminDashboard = () => {
     },
   });
 
-  if (cvsLoading || positionsLoading) {
+  const { data: interviews, isLoading: interviewsLoading } = useQuery({
+    queryKey: ["interviews"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("interviews")
+        .select("*, cvs(applicant_name)");
+
+      if (error) throw error;
+      return data as (Interview & { cvs: { applicant_name: string } })[];
+    },
+  });
+
+  if (cvsLoading || positionsLoading || interviewsLoading) {
     return <div>Loading...</div>;
   }
 
@@ -107,13 +125,34 @@ const AdminDashboard = () => {
     })
     .slice(0, 4);
 
-  // To-do list
-  const todoList = [
-    { task: "Run payroll", date: "Mar 4 at 6:00 pm", icon: <Briefcase className="h-5 w-5" /> },
-    { task: "Review time off request", date: "Mar 7 at 6:00 pm", icon: <ClockIcon className="h-5 w-5" /> },
-    { task: "Sign board resolution", date: "Mar 12 at 6:00 pm", icon: <CheckCircle className="h-5 w-5" /> },
-    { task: "Finish onboarding Tony", date: "Mar 12 at 6:00 pm", icon: <Users className="h-5 w-5" /> }
-  ];
+  // Get upcoming interviews
+  const upcomingInterviews = interviews 
+    ? [...interviews]
+        .filter(interview => interview.status === 'scheduled')
+        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+        .slice(0, 4)
+    : [];
+
+  // Calculate skill gaps
+  const skillGapAnalysis = positions?.reduce((acc, position) => {
+    const requiredSkills = position.requirements || [];
+    const matchingCVs = cvs.filter(cv => {
+      const candidateSkills = cv.skills || [];
+      return requiredSkills.some(skill => candidateSkills.includes(skill));
+    });
+    
+    const missingSkills = requiredSkills.filter(skill => {
+      return !cvs.some(cv => (cv.skills || []).includes(skill));
+    });
+    
+    acc.push({
+      position: position.title,
+      skillGaps: missingSkills,
+      matchRate: requiredSkills.length ? matchingCVs.length / cvs.length * 100 : 0
+    });
+    
+    return acc;
+  }, [] as Array<{position: string, skillGaps: string[], matchRate: number}>);
 
   // Experience distribution data for pie chart
   const experienceGroups = cvs.reduce((acc, cv) => {
@@ -258,17 +297,6 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-3 gap-6">
           {/* Left column */}
           <div className="col-span-2 space-y-6">
-            {/* Application Trends chart */}
-            <Card className="bg-secondary backdrop-blur border-none">
-              <CardHeader>
-                <CardTitle>Application Trends</CardTitle>
-                <p className="text-sm text-gray-500">Last 7 days VS prior week</p>
-              </CardHeader>
-              <CardContent>
-                <ApplicationTrendsChart cvs={cvs} />
-              </CardContent>
-            </Card>
-
             {/* Recent CVs - replacing the "Recent emails" section */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
@@ -323,46 +351,134 @@ const AdminDashboard = () => {
             </Card>
           </div>
 
-          {/* Right column */}
+          {/* Right column - REPLACING To-Do list and Board meeting with more relevant content */}
           <div className="space-y-6">
-            {/* Experience Distribution Pie Chart */}
-            <ExperienceClusterChart experienceGroups={experienceGroups} />
-
-            {/* To-do list */}
+            {/* Upcoming Interviews - new section replacing To-Do list */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
-                <CardTitle>Your to-Do list</CardTitle>
+                <CardTitle>Upcoming Interviews</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {todoList.map((todo, index) => (
+                  {upcomingInterviews.length > 0 ? (
+                    upcomingInterviews.map((interview, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className="bg-black text-white rounded-full p-2 mr-4">
+                          <Calendar className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{interview.cvs?.applicant_name || "Candidate"}</p>
+                          <div className="flex items-center text-sm text-gray-500">
+                            {new Date(interview.scheduled_at).toLocaleDateString()} at {new Date(interview.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => navigate(`/admin/interviews/${interview.id}`)}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500 py-4">No upcoming interviews scheduled</p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => navigate("/admin/interviews")}
+                >
+                  Manage all interviews
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Skills Gap Analysis - new section replacing Board meeting */}
+            <Card className="bg-secondary backdrop-blur border-none">
+              <CardHeader>
+                <CardTitle>Skills Gap Analysis</CardTitle>
+                <CardDescription>Missing skills in candidate pool</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {skillGapAnalysis && skillGapAnalysis.length > 0 ? (
+                  <div className="space-y-4">
+                    {skillGapAnalysis.slice(0, 2).map((position, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">{position.position}</h4>
+                          <span className="text-sm text-gray-500">
+                            {position.matchRate.toFixed(0)}% match rate
+                          </span>
+                        </div>
+                        <Progress value={position.matchRate} className="h-2" />
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {position.skillGaps.slice(0, 3).map((skill, idx) => (
+                            <span 
+                              key={idx} 
+                              className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {position.skillGaps.length > 3 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                              +{position.skillGaps.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-4">No skill gaps detected</p>
+                )}
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => navigate("/admin/positions")}
+                >
+                  View all positions
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Top Performers - new section */}
+            <Card className="bg-secondary backdrop-blur border-none">
+              <CardHeader>
+                <CardTitle>Top Performers</CardTitle>
+                <CardDescription>Highest rated candidates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {cvs.filter(cv => cv.status === 'accepted').slice(0, 3).map((cv, index) => (
                     <div key={index} className="flex items-center">
                       <div className="bg-black text-white rounded-full p-2 mr-4">
-                        {todo.icon}
+                        <Award className="h-5 w-5" />
                       </div>
-                      <div>
-                        <p className="font-medium">{todo.task}</p>
-                        <p className="text-sm text-gray-500">{todo.date}</p>
+                      <div className="flex-1">
+                        <p className="font-medium">{cv.applicant_name}</p>
+                        <p className="text-sm text-gray-500">
+                          {cv.current_job_title || "Applicant"} • Match: {cv.requirements_match?.toFixed(0) || 0}%
+                        </p>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-2"
+                        onClick={() => navigate(`/admin/cv/${cv.id}`)}
+                      >
+                        View
+                      </Button>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Board meeting */}
-            <Card className="bg-secondary backdrop-blur border-none text-primary">
-              <CardHeader>
-                <CardTitle>Board meeting</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-green-800 rounded-full mr-2"></div>
-                  <p>Feb 22 at 6:00 PM</p>
-                </div>
-                <p className="mt-4 text-sm text-gray-800">
-                  You have been invited to attend a meeting of the Board Directors.
-                </p>
               </CardContent>
             </Card>
           </div>
