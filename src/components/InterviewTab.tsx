@@ -1,43 +1,35 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format, parseISO } from 'date-fns';
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const InterviewCard = ({ interview }: { interview: any }) => (
   <Card className="border rounded-lg shadow-sm mb-4 bg-background">
     <CardContent className="p-4">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary text-primary-foreground rounded-full p-2">
-            <Clock className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-semibold text-lg text-primary">
-              {format(parseISO(interview.scheduled_at), 'EEEE, MMMM do, yyyy')}
-            </p>
-            <p className="text-muted-foreground">
-              {format(parseISO(interview.scheduled_at), 'hh:mm a')}
-            </p>
-          </div>
+        <div>
+          <p className="font-semibold text-lg text-primary">
+            {format(parseISO(interview.scheduled_at), 'EEEE, MMMM do, yyyy')}
+          </p>
+          <p className="text-muted-background">
+            {format(parseISO(interview.scheduled_at), 'hh:mm a')}
+          </p>
         </div>
         <div className="text-right">
-          <Badge
-            className={`px-3 py-1 ${
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
               interview.status === "confirmed"
-                ? "bg-green-100 text-green-800 hover:bg-green-100"
+                ? "bg-green-100 text-green-800"
                 : interview.status === "pending"
-                ? "bg-secondary text-secondary-foreground hover:bg-secondary"
-                : "bg-destructive/10 text-destructive hover:bg-destructive/10"
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-destructive/10 text-destructive"
             }`}
           >
             {interview.status}
-          </Badge>
+          </span>
           {interview.feedback && (
             <p className="text-sm text-muted-foreground mt-1">
               Feedback: {interview.feedback}
@@ -129,12 +121,9 @@ const InterviewTab = () => {
                   <InterviewCard key={interview.id} interview={interview} />
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-4 text-muted-foreground">
-                    No interviews scheduled on this date.
-                  </p>
-                </div>
+                <p className="text-center text-muted-foreground">
+                  No interviews scheduled on this date.
+                </p>
               )}
             </div>
           </div>
