@@ -8,6 +8,7 @@ import ApplicantLogin from "./pages/ApplicantLogin";
 import ClientDashboard from "./pages/ClientDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import CVDetail from "./pages/CVDetail";
+import SortingPage from "./pages/SortingPage"; // Import the SortingPage component
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/cv/:id" element={<CVDetail />} />
+          <Route path="/admin/sorting" element={<SortingPage />} /> {/* Add the route for SortingPage */}
           <Route path="/applicant/login" element={<ApplicantLogin />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="*" element={<NotFound />} />

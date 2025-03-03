@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,30 +5,22 @@ import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { TopCVsTable } from "@/components/admin/TopCVsTable";
 import { ApplicationTrendsChart } from "@/components/admin/ApplicationTrendsChart";
 import { ExperienceClusterChart } from "@/components/admin/ExperienceClusterChart";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {  
-  ChevronLeft, 
-  ChevronRight, 
-  MoreVertical,
-  Clock,
   Users,
-  CreditCard,
   Briefcase,
   CheckCircle,
-  Clock as ClockIcon,
   LogOut,
-  Calendar,
-  Hourglass,
-  Medal,
-  Award,
-  Star
+  Home,
+  SortAsc,
+  FileText,
+  Settings,
+  Clock
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Position = Database["public"]["Tables"]["positions"]["Row"];
@@ -43,18 +34,15 @@ const AdminDashboard = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
         navigate("/admin/login");
         return;
       }
-
       const { data: adminData } = await supabase
         .from('admin_users')
         .select('is_admin')
         .eq('id', session.user.id)
         .single();
-
       if (!adminData?.is_admin) {
         toast({
           title: "Access denied",
@@ -64,7 +52,6 @@ const AdminDashboard = () => {
         navigate("/admin/login");
       }
     };
-
     checkAdminStatus();
   }, [navigate, toast]);
 
@@ -75,7 +62,6 @@ const AdminDashboard = () => {
         .from("cvs")
         .select("*")
         .order("requirements_match", { ascending: false });
-
       if (error) throw error;
       return data as CV[];
     },
@@ -87,7 +73,6 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from("positions")
         .select("*");
-
       if (error) throw error;
       return data as Position[];
     },
@@ -99,7 +84,6 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from("interviews")
         .select("*, cvs(applicant_name)");
-
       if (error) throw error;
       return data as (Interview & { cvs: { applicant_name: string } })[];
     },
@@ -116,16 +100,10 @@ const AdminDashboard = () => {
   const acceptedApplications = cvs.filter(cv => cv.status === 'accepted').length;
   const averageExperience = cvs.reduce((acc, cv) => acc + cv.years_experience, 0) / cvs.length;
 
-  // Recent applications data
   const recentCVs = [...cvs]
-    .sort((a, b) => {
-      const dateA = a.application_date || a.created_at || '';
-      const dateB = b.application_date || b.created_at || '';
-      return new Date(dateB).getTime() - new Date(dateA).getTime();
-    })
+    .sort((a, b) => new Date(b.application_date || b.created_at || '').getTime() - new Date(a.application_date || a.created_at || '').getTime())
     .slice(0, 4);
 
-  // Upcoming interviews data
   const upcomingInterviews = interviews 
     ? [...interviews]
         .filter(interview => interview.status === 'scheduled')
@@ -133,27 +111,19 @@ const AdminDashboard = () => {
         .slice(0, 4)
     : [];
 
-  // Top performers data
   const topPerformers = [...cvs]
     .map(cv => {
       const skillsScore = (cv.skills?.length || 0) * 2;
       const experienceScore = cv.years_experience * 5;
       const matchScore = cv.requirements_match || 0;
-      
       const certificationBonus = cv.certifications ? 15 : 0;
       const referencesBonus = cv.references ? 10 : 0;
-      
       const totalScore = skillsScore + experienceScore + matchScore + certificationBonus + referencesBonus;
-      
-      return {
-        ...cv,
-        performanceScore: totalScore
-      };
+      return { ...cv, performanceScore: totalScore };
     })
     .sort((a, b) => b.performanceScore - a.performanceScore)
     .slice(0, 5);
 
-  // Experience distribution data for pie chart
   const experienceGroups = cvs.reduce((acc, cv) => {
     const group = `${Math.floor(cv.years_experience / 2) * 2}-${Math.floor(cv.years_experience / 2) * 2 + 2} years`;
     if (!acc[group]) acc[group] = [];
@@ -168,15 +138,11 @@ const AdminDashboard = () => {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
-    
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
     if (diffInHours < 24) {
-      return diffInHours < 1 
-        ? "Just now" 
-        : `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+      return diffInHours < 1 ? "Just now" : `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
     } else if (diffInHours < 48) {
       return "Yesterday";
     } else {
@@ -191,17 +157,17 @@ const AdminDashboard = () => {
           <span className="text-xl font-bold">Cona</span>
         </div>
         <div className="flex flex-col items-center space-y-8">
-          <Button variant="ghost" size="icon" className="text-white">
-            <Users className="h-6 w-6" />
+          <Button variant="ghost" size="icon" className="text-white bg-gray-700" onClick={() => navigate("/admin/dashboard")}>
+            <Home className="h-6 w-6" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white" onClick={() => navigate("/admin/sorting")}>
+            <SortAsc className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" className="text-white">
-            <Briefcase className="h-6 w-6" />
+            <FileText className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" className="text-white">
-            <CreditCard className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white">
-            <Clock className="h-6 w-6" />
+            <Settings className="h-6 w-6" />
           </Button>
         </div>
       </div>
@@ -226,9 +192,6 @@ const AdminDashboard = () => {
             <Card className="bg-white/80 backdrop-blur border-none shadow-none">
               <CardHeader className="flex flex-row items-center justify-between p-4">
                 <CheckCircle className="h-6 w-6" />
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <h2 className="text-2xl font-bold">{acceptedApplications}</h2>
@@ -239,9 +202,6 @@ const AdminDashboard = () => {
             <Card className="bg-white/80 backdrop-blur border-none shadow-none">
               <CardHeader className="flex flex-row items-center justify-between p-4">
                 <Clock className="h-6 w-6" />
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <h2 className="text-2xl font-bold">{pendingApplications}</h2>
@@ -252,9 +212,6 @@ const AdminDashboard = () => {
             <Card className="bg-white/80 backdrop-blur border-none shadow-none">
               <CardHeader className="flex flex-row items-center justify-between p-4">
                 <Users className="h-6 w-6" />
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <h2 className="text-2xl font-bold">{totalApplications}</h2>
@@ -265,9 +222,6 @@ const AdminDashboard = () => {
             <Card className="bg-white/80 backdrop-blur border-none shadow-none">
               <CardHeader className="flex flex-row items-center justify-between p-4">
                 <Briefcase className="h-6 w-6" />
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <h2 className="text-2xl font-bold">{averageExperience.toFixed(1)}</h2>
@@ -275,20 +229,10 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </div>
-
-          <div className="flex justify-center mt-4">
-            <Button variant="ghost" size="icon">
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2 space-y-6">
-            {/* Application Trends Chart */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Application Trends</CardTitle>
@@ -299,7 +243,6 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Top Performers */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Top Performers</CardTitle>
@@ -355,10 +298,8 @@ const AdminDashboard = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Experience Distribution Chart */}
             <ExperienceClusterChart experienceGroups={experienceGroups} />
 
-            {/* Upcoming Interviews */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Upcoming Interviews</CardTitle>
@@ -403,7 +344,6 @@ const AdminDashboard = () => {
               </CardFooter>
             </Card>
 
-            {/* Recent Applications */}
             <Card className="bg-secondary backdrop-blur border-none">
               <CardHeader>
                 <CardTitle>Recent Applications</CardTitle>

@@ -66,14 +66,10 @@ const ClientDashboard = () => {
           <h1 className="text-4xl font-semibold text-secondary">
             {existingCV ? `Hello ${existingCV.applicant_name}` : 'Submit Your CV'}
           </h1>
-          <Button
-            variant="ghost"
-            className="flex items-center gap-2"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
         </div>
 
         <Tabs defaultValue="cv" className="w-full">

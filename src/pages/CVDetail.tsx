@@ -1,7 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
 import CVDisplay from "@/components/CVDisplay";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,7 +24,6 @@ const CVDetail = () => {
   });
 
   const handleEdit = () => {
-    // Placeholder function for editing the CV
     console.log("Edit CV clicked");
   };
 
@@ -44,15 +44,20 @@ const CVDetail = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>CV Detail</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CVDisplay cv={cv} onEdit={handleEdit} />
-        </CardContent>
-      </Card>
+    <div className="bg-primary min-h-screen p-8 flex flex-col items-center">
+      <div className="w-full max-w-3xl">
+        <Card className="bg-background backdrop-blur border-none">
+          <CardHeader className="p-6 border-b border-gray-200">
+            <CardTitle className="text-2xl font-bold">CV Detail</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <CVDisplay cv={cv} onEdit={handleEdit} />
+          </CardContent>
+          <CardFooter className="p-6 border-t border-gray-200">
+            <Button onClick={handleEdit}>Edit CV</Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 };
