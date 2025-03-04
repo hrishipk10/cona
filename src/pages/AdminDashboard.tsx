@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -164,7 +163,7 @@ const AdminDashboard = () => {
           <Button variant="ghost" size="icon" className="text-white" onClick={() => navigate("/admin/sorting")}>
             <SortAsc className="h-6 w-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-white">
+          <Button variant="ghost" size="icon" className="text-white" onClick={() => navigate("/admin/messages")}>
             <FileText className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" className="text-white">
