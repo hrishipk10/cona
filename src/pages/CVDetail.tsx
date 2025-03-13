@@ -1,16 +1,19 @@
 
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import CVDisplay from "@/components/CVDisplay";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const CVDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: cv, isLoading, error } = useQuery({
     queryKey: ["cv", id],
@@ -26,12 +29,103 @@ const CVDetail = () => {
     },
   });
 
+  // Mutation to update CV status
+  const { mutate: updateStatus, isPending } = useMutation({
+    mutationFn: async ({ status, reason }: { status: "accepted" | "rejected", reason?: string }) => {
+      const updateData: any = { status };
+      
+      // If rejected, send a rejection message
+      if (status === "rejected" && reason) {
+        // First update the CV status
+        const { error: cvError } = await supabase
+          .from("cvs")
+          .update(updateData)
+          .eq("id", id as string);
+        
+        if (cvError) throw cvError;
+        
+        // Then create a rejection message
+        const { error: messageError } = await supabase
+          .from("messages")
+          .insert([
+            {
+              user_id: id, // Using CV id as user_id
+              message: `We regret to inform you that your application has been rejected. The main area that needs improvement is: ${reason}`,
+              read: false,
+            },
+          ]);
+        
+        if (messageError) throw messageError;
+      } else {
+        // Just update CV status if accepted
+        const { error: cvError } = await supabase
+          .from("cvs")
+          .update(updateData)
+          .eq("id", id as string);
+        
+        if (cvError) throw cvError;
+      }
+
+      return { status };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["cv", id] });
+      
+      if (data.status === "accepted") {
+        toast({
+          title: "Application Accepted",
+          description: "The candidate has been moved to the interview stage.",
+        });
+        // Navigate to messages page after accepting
+        navigate("/admin/messages");
+      } else {
+        toast({
+          title: "Application Rejected",
+          description: "A rejection message has been sent to the candidate.",
+        });
+        // Go back to previous page after rejecting
+        navigate(-1);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update status: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleEdit = () => {
     console.log("Edit CV clicked");
   };
 
   const handleBack = () => {
     navigate(-1); // Go back to the previous page
+  };
+
+  // Find the weakest area for rejection reason
+  const findWeakestArea = () => {
+    if (!cv) return "overall experience";
+    
+    // Simple algorithm to determine the weakest area
+    // Could be expanded for more sophisticated evaluation
+    if (cv.years_experience < 2) return "work experience";
+    if (!cv.languages_known || cv.languages_known.length < 2) return "language proficiency";
+    if (!cv.education) return "educational background";
+    if (!cv.certifications) return "professional certifications";
+    if (cv.skills.length < 3) return "technical skills";
+    
+    return "overall fit for the position";
+  };
+
+  const handleAccept = () => {
+    updateStatus({ status: "accepted" });
+  };
+
+  const handleReject = () => {
+    const reason = findWeakestArea();
+    updateStatus({ status: "rejected", reason });
   };
 
   if (isLoading) {
@@ -67,8 +161,40 @@ const CVDetail = () => {
           <CardContent className="p-6">
             <CVDisplay cv={cv} onEdit={handleEdit} />
           </CardContent>
-          <CardFooter className="p-6 border-t border-gray-200">
+          <CardFooter className="p-6 border-t border-gray-200 flex justify-between">
             <Button onClick={handleEdit}>Edit CV</Button>
+            
+            <div className="flex gap-2">
+              {cv.status === "pending" && (
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleReject}
+                    disabled={isPending}
+                  >
+                    <X className="mr-2 h-4 w-4" /> Reject
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={handleAccept}
+                    disabled={isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="mr-2 h-4 w-4" /> Accept
+                  </Button>
+                </>
+              )}
+              {cv.status === "accepted" && (
+                <Button variant="secondary" disabled>
+                  <Check className="mr-2 h-4 w-4" /> Accepted
+                </Button>
+              )}
+              {cv.status === "rejected" && (
+                <Button variant="secondary" disabled>
+                  <X className="mr-2 h-4 w-4" /> Rejected
+                </Button>
+              )}
+            </div>
           </CardFooter>
         </Card>
       </div>
