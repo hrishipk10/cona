@@ -1,13 +1,16 @@
-import { useParams } from "react-router-dom";
+
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import CVDisplay from "@/components/CVDisplay";
 import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft } from "lucide-react";
 
 const CVDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const { data: cv, isLoading, error } = useQuery({
     queryKey: ["cv", id],
@@ -25,6 +28,10 @@ const CVDetail = () => {
 
   const handleEdit = () => {
     console.log("Edit CV clicked");
+  };
+
+  const handleBack = () => {
+    navigate(-1); // Go back to the previous page
   };
 
   if (isLoading) {
@@ -46,6 +53,13 @@ const CVDetail = () => {
   return (
     <div className="bg-primary min-h-screen p-8 flex flex-col items-center">
       <div className="w-full max-w-3xl">
+        <Button 
+          variant="outline" 
+          className="mb-4" 
+          onClick={handleBack}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
         <Card className="bg-background backdrop-blur border-none">
           <CardHeader className="p-6 border-b border-gray-200">
             <CardTitle className="text-2xl font-bold">CV Detail</CardTitle>

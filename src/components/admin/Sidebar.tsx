@@ -1,7 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, SortAsc, FileText, Settings } from "lucide-react";
+import { Home, SortAsc, MessageSquare, Settings } from "lucide-react";
 
 export const Sidebar = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export const Sidebar = () => {
           <SortAsc className="h-6 w-6" />
         </Button>
         <Button variant="ghost" size="icon" className="text-white" onClick={() => navigate("/admin/messages")}>
-          <FileText className="h-6 w-6" />
+          <MessageSquare className="h-6 w-6" />
         </Button>
         <Button variant="ghost" size="icon" className="text-white">
           <Settings className="h-6 w-6" />
