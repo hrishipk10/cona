@@ -213,7 +213,7 @@ const MessagesInterviewsPage = () => {
             <SortAsc className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" className="text-white bg-gray-700" onClick={() => navigate("/admin/messages")}>
-            <Message className="h-6 w-6" />
+            <MessageCircle className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" className="text-white">
             <Settings className="h-6 w-6" />
