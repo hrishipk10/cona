@@ -5,18 +5,17 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
-import { MessageSquare, LogOut, Home, SortAsc, MessageCircle, Settings, ChevronRight } from "lucide-react";
+import { LogOut, Home, SortAsc, MessageCircle, Settings, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { Spinner } from "@/components/ui/spinner";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
@@ -33,12 +32,17 @@ const MessagesInterviewsPage = () => {
   const { data: cvs, isLoading: cvsLoading } = useQuery({
     queryKey: ["cvs"],
     queryFn: async () => {
+      console.log("Fetching CVs");
       const { data, error } = await supabase
         .from("cvs")
         .select("*")
         .order("application_date", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching CVs:", error);
+        throw error;
+      }
+      console.log("CVs fetched:", data);
       return data as CV[];
     },
   });
@@ -151,6 +155,9 @@ const MessagesInterviewsPage = () => {
   // Filter CVs by status
   const acceptedCvs = cvs?.filter(cv => cv.status === "accepted") || [];
   const rejectedCvs = cvs?.filter(cv => cv.status === "rejected") || [];
+  
+  console.log("Accepted CVs:", acceptedCvs);
+  console.log("Rejected CVs:", rejectedCvs);
 
   // Helper function to find interview for a CV
   const findInterviewForCv = (cvId: string) => {
@@ -184,7 +191,11 @@ const MessagesInterviewsPage = () => {
   };
 
   if (cvsLoading || interviewsLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner />
+      </div>
+    );
   }
 
   return (

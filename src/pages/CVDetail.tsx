@@ -32,19 +32,24 @@ const CVDetail = () => {
   // Mutation to update CV status
   const { mutate: updateStatus, isPending } = useMutation({
     mutationFn: async ({ status, reason }: { status: "accepted" | "rejected", reason?: string }) => {
-      const updateData: any = { status };
+      console.log(`Updating CV status to: ${status}, reason: ${reason || 'N/A'}`);
+      
+      // First update the CV status
+      const { data, error: cvError } = await supabase
+        .from("cvs")
+        .update({ status })
+        .eq("id", id as string)
+        .select();
+      
+      if (cvError) {
+        console.error("Error updating CV status:", cvError);
+        throw cvError;
+      }
+
+      console.log("CV status updated successfully:", data);
       
       // If rejected, send a rejection message
       if (status === "rejected" && reason) {
-        // First update the CV status
-        const { error: cvError } = await supabase
-          .from("cvs")
-          .update(updateData)
-          .eq("id", id as string);
-        
-        if (cvError) throw cvError;
-        
-        // Then create a rejection message
         const { error: messageError } = await supabase
           .from("messages")
           .insert([
@@ -55,20 +60,17 @@ const CVDetail = () => {
             },
           ]);
         
-        if (messageError) throw messageError;
-      } else {
-        // Just update CV status if accepted
-        const { error: cvError } = await supabase
-          .from("cvs")
-          .update(updateData)
-          .eq("id", id as string);
-        
-        if (cvError) throw cvError;
+        if (messageError) {
+          console.error("Error sending rejection message:", messageError);
+          throw messageError;
+        }
       }
 
       return { status };
     },
     onSuccess: (data) => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["cvs"] });
       queryClient.invalidateQueries({ queryKey: ["cv", id] });
       
       if (data.status === "accepted") {
@@ -88,6 +90,7 @@ const CVDetail = () => {
       }
     },
     onError: (error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: `Failed to update status: ${error.message}`,
@@ -120,11 +123,13 @@ const CVDetail = () => {
   };
 
   const handleAccept = () => {
+    console.log("Accept button clicked");
     updateStatus({ status: "accepted" });
   };
 
   const handleReject = () => {
     const reason = findWeakestArea();
+    console.log("Reject button clicked with reason:", reason);
     updateStatus({ status: "rejected", reason });
   };
 
