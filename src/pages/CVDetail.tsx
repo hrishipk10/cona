@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -29,12 +28,10 @@ const CVDetail = () => {
     },
   });
 
-  // Mutation to update CV status
   const { mutate: updateStatus, isPending } = useMutation({
     mutationFn: async ({ status, reason }: { status: "accepted" | "rejected", reason?: string }) => {
       console.log(`Updating CV status to: ${status}, reason: ${reason || 'N/A'}`);
       
-      // First update the CV status
       const { data, error: cvError } = await supabase
         .from("cvs")
         .update({ status })
@@ -46,64 +43,58 @@ const CVDetail = () => {
         throw cvError;
       }
 
-      console.log("CV status updated successfully:", data);
+      const messageText = status === "accepted" 
+        ? "Congratulations! Your application has been accepted. We would like to schedule an interview with you soon." 
+        : `We regret to inform you that your application has been rejected. The main area that needs improvement is: ${reason || 'overall profile'}`;
+
+      const { error: messageError } = await supabase
+        .from("messages")
+        .insert([
+          {
+            user_id: id, // Using CV id for user_id
+            message: messageText,
+            read: false,
+          },
+        ]);
       
-      // If rejected, send a rejection message
-      if (status === "rejected" && reason) {
-        const { error: messageError } = await supabase
-          .from("messages")
+      if (messageError) {
+        console.error(`Error sending ${status} message:`, messageError);
+        throw messageError;
+      }
+
+      if (status === "accepted") {
+        const { error: interviewError } = await supabase
+          .from("interviews")
           .insert([
             {
-              user_id: id, // Using CV id as user_id
-              message: `We regret to inform you that your application has been rejected. The main area that needs improvement is: ${reason}`,
-              read: false,
+              cv_id: id,
+              status: "scheduled",
+              scheduled_at: new Date().toISOString(), // Placeholder date, can be updated later
             },
           ]);
         
-        if (messageError) {
-          console.error("Error sending rejection message:", messageError);
-          throw messageError;
-        }
-      } else if (status === "accepted") {
-        // Send acceptance message for accepted CVs
-        const { error: messageError } = await supabase
-          .from("messages")
-          .insert([
-            {
-              user_id: id, // Using CV id as user_id
-              message: `Congratulations! Your application has been accepted. We would like to schedule an interview with you soon.`,
-              read: false,
-            },
-          ]);
-        
-        if (messageError) {
-          console.error("Error sending acceptance message:", messageError);
-          throw messageError;
+        if (interviewError) {
+          console.error("Error creating interview:", interviewError);
+          throw interviewError;
         }
       }
 
       return { status };
     },
     onSuccess: (data) => {
-      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["cvs"] });
       queryClient.invalidateQueries({ queryKey: ["cv", id] });
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["interviews"] });
       
-      if (data.status === "accepted") {
-        toast({
-          title: "Application Accepted",
-          description: "The candidate has been moved to the interview stage.",
-        });
-        // Navigate to messages page after accepting
-        navigate("/admin/messages");
-      } else {
-        toast({
-          title: "Application Rejected",
-          description: "A rejection message has been sent to the candidate.",
-        });
-        // Go back to previous page after rejecting
-        navigate(-1);
-      }
+      toast({
+        title: data.status === "accepted" ? "Application Accepted" : "Application Rejected",
+        description: data.status === "accepted" 
+          ? "The candidate has been moved to the interview stage." 
+          : "A rejection message has been sent to the candidate.",
+      });
+
+      navigate(data.status === "accepted" ? "/admin/messages" : -1);
     },
     onError: (error) => {
       console.error("Mutation error:", error);
@@ -123,12 +114,9 @@ const CVDetail = () => {
     navigate(-1); // Go back to the previous page
   };
 
-  // Find the weakest area for rejection reason
   const findWeakestArea = () => {
     if (!cv) return "overall experience";
     
-    // Simple algorithm to determine the weakest area
-    // Could be expanded for more sophisticated evaluation
     if (cv.years_experience < 2) return "work experience";
     if (!cv.languages_known || cv.languages_known.length < 2) return "language proficiency";
     if (!cv.education) return "educational background";
