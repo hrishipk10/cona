@@ -164,26 +164,34 @@ export type Database = {
       messages: {
         Row: {
           created_at: string | null
+          cv_id: string | null
           id: string
           message: string
           read: boolean | null
-          user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          cv_id?: string | null
           id?: string
           message: string
           read?: boolean | null
-          user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          cv_id?: string | null
           id?: string
           message?: string
           read?: boolean | null
-          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_cv_id_fkey"
+            columns: ["cv_id"]
+            isOneToOne: false
+            referencedRelation: "cvs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       positions: {
         Row: {

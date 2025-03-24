@@ -51,7 +51,7 @@ const CVDetail = () => {
         .from("messages")
         .insert([
           {
-            user_id: id, // Using CV id for user_id
+            cv_id: id, // Now using cv_id instead of user_id
             message: messageText,
             read: false,
           },
