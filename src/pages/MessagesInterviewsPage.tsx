@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +27,6 @@ const MessagesInterviewsPage = () => {
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  // Query for fetching all CVs
   const { data: cvs, isLoading: cvsLoading } = useQuery({
     queryKey: ["cvs"],
     queryFn: async () => {
@@ -47,7 +45,6 @@ const MessagesInterviewsPage = () => {
     },
   });
 
-  // Query for fetching all interviews
   const { data: interviews, isLoading: interviewsLoading } = useQuery({
     queryKey: ["interviews"],
     queryFn: async () => {
@@ -61,14 +58,14 @@ const MessagesInterviewsPage = () => {
     },
   });
 
-  // Mutation for sending a message
   const { mutate: sendMessage, isPending: isSendingMessage } = useMutation({
     mutationFn: async (data: { cv_id: string; message: string }) => {
+      console.log("Sending message with cv_id:", data.cv_id);
       const { error } = await supabase
         .from("messages")
         .insert([
           {
-            user_id: data.cv_id, // Using cv_id as the user_id for now
+            cv_id: data.cv_id,
             message: data.message,
             read: false,
           },
@@ -94,10 +91,8 @@ const MessagesInterviewsPage = () => {
     },
   });
 
-  // Mutation for updating an interview date
   const { mutate: updateInterviewDate, isPending: isUpdatingInterview } = useMutation({
     mutationFn: async (data: { cv_id: string; date: Date }) => {
-      // Check if an interview already exists for this CV
       const { data: existingInterview, error: fetchError } = await supabase
         .from("interviews")
         .select("id")
@@ -107,7 +102,6 @@ const MessagesInterviewsPage = () => {
       if (fetchError) throw fetchError;
 
       if (existingInterview) {
-        // Update existing interview
         const { error } = await supabase
           .from("interviews")
           .update({
@@ -118,7 +112,6 @@ const MessagesInterviewsPage = () => {
         
         if (error) throw error;
       } else {
-        // Create new interview
         const { error } = await supabase
           .from("interviews")
           .insert([
@@ -152,19 +145,16 @@ const MessagesInterviewsPage = () => {
     },
   });
 
-  // Filter CVs by status
   const acceptedCvs = cvs?.filter(cv => cv.status === "accepted") || [];
   const rejectedCvs = cvs?.filter(cv => cv.status === "rejected") || [];
   
   console.log("Accepted CVs:", acceptedCvs);
   console.log("Rejected CVs:", rejectedCvs);
 
-  // Helper function to find interview for a CV
   const findInterviewForCv = (cvId: string) => {
     return interviews?.find(interview => interview.cv_id === cvId);
   };
 
-  // Handle form submission for messages
   const handleSendMessage = (cvId: string) => {
     if (message.trim()) {
       sendMessage({
@@ -174,7 +164,6 @@ const MessagesInterviewsPage = () => {
     }
   };
 
-  // Handle updating interview date
   const handleUpdateInterviewDate = () => {
     if (selectedCvId && selectedDate) {
       updateInterviewDate({
@@ -184,7 +173,6 @@ const MessagesInterviewsPage = () => {
     }
   };
 
-  // Handle logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
@@ -200,7 +188,6 @@ const MessagesInterviewsPage = () => {
 
   return (
     <div className="bg-primary relative hidden md:flex flex-col items-center justify-center p-8 min-h-screen">
-      {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-[88px] bg-black flex flex-col items-center py-8 text-white">
         <div className="mb-12">
           <span className="text-xl font-bold">Cona</span>
@@ -221,7 +208,6 @@ const MessagesInterviewsPage = () => {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="ml-[88px] p-6 w-full">
         <div className="bg-secondary backdrop-blur rounded-xl p-6 mb-6">
           <div className="flex justify-between items-center">
