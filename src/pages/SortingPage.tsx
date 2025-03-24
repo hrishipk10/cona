@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, SortAsc, FileText, Settings, Filter, Search, X, ArrowUpDown } from "lucide-react";
+import { Home, SortAsc, FileText, Settings, Filter, Search, X, ArrowUpDown, Sliders } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,14 +15,26 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { Slider } from "@/components/ui/slider";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
-type SortCriteria = "experience" | "skills" | "rating" | "name" | "date";
+type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "score";
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "pending" | "accepted" | "rejected";
 
+// Define scoring configuration interface
+interface ScoringConfig {
+  skillsWeight: number;
+  experienceWeight: number;
+  matchWeight: number;
+  certificationBonus: number;
+  referencesBonus: number;
+  languagesWeight: number;
+}
+
 const SortingPage = () => {
-  const [sortCriteria, setSortCriteria] = useState<SortCriteria>("experience");
+  const [sortCriteria, setSortCriteria] = useState<SortCriteria>("score");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -30,6 +42,18 @@ const SortingPage = () => {
   const [minExperience, setMinExperience] = useState<number>(0);
   const [maxExperience, setMaxExperience] = useState<number>(30);
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [showScoringConfig, setShowScoringConfig] = useState<boolean>(false);
+  
+  // Default scoring config
+  const [scoringConfig, setScoringConfig] = useState<ScoringConfig>({
+    skillsWeight: 2,
+    experienceWeight: 5,
+    matchWeight: 1,
+    certificationBonus: 15,
+    referencesBonus: 10,
+    languagesWeight: 1
+  });
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,6 +95,30 @@ const SortingPage = () => {
     });
   };
 
+  const resetScoringConfig = () => {
+    setScoringConfig({
+      skillsWeight: 2,
+      experienceWeight: 5,
+      matchWeight: 1,
+      certificationBonus: 15,
+      referencesBonus: 10,
+      languagesWeight: 1
+    });
+    
+    toast({
+      title: "Scoring reset",
+      description: "Scoring configuration has been reset to default values.",
+    });
+  };
+
+  const saveScoringConfig = () => {
+    toast({
+      title: "Scoring configuration saved",
+      description: "Your scoring preferences have been applied.",
+    });
+    setShowScoringConfig(false);
+  };
+
   const toggleSort = (criteria: SortCriteria) => {
     if (sortCriteria === criteria) {
       // Toggle sort order if same criteria
@@ -82,10 +130,27 @@ const SortingPage = () => {
     }
   };
 
+  // Calculate scores for each CV using the configured weights
+  const scoreCVs = (cvList: CV[]) => {
+    return cvList.map(cv => {
+      const skillsScore = (cv.skills?.length || 0) * scoringConfig.skillsWeight;
+      const experienceScore = cv.years_experience * scoringConfig.experienceWeight;
+      const matchScore = (cv.requirements_match || 0) * scoringConfig.matchWeight;
+      const certificationBonus = cv.certifications ? scoringConfig.certificationBonus : 0;
+      const referencesBonus = cv.references ? scoringConfig.referencesBonus : 0;
+      const languagesScore = (cv.languages_known?.length || 0) * scoringConfig.languagesWeight;
+      
+      const totalScore = skillsScore + experienceScore + matchScore + 
+                         certificationBonus + referencesBonus + languagesScore;
+      
+      return { ...cv, performanceScore: totalScore };
+    });
+  };
+
   // Filter and sort CVs
   const filteredAndSortedCVs = cvs
-    ? cvs
-        .filter((cv) => {
+    ? scoreCVs(
+        cvs.filter((cv) => {
           // Filter by status
           if (statusFilter !== "all" && cv.status !== statusFilter) {
             return false;
@@ -115,26 +180,28 @@ const SortingPage = () => {
 
           return true;
         })
-        .sort((a, b) => {
-          const multiplier = sortOrder === "asc" ? 1 : -1;
+      ).sort((a, b) => {
+        const multiplier = sortOrder === "asc" ? 1 : -1;
 
-          switch (sortCriteria) {
-            case "experience":
-              return multiplier * (a.years_experience - b.years_experience);
-            case "skills":
-              return multiplier * ((a.skills?.length || 0) - (b.skills?.length || 0));
-            case "rating":
-              return multiplier * ((a.rating || 0) - (b.rating || 0));
-            case "name":
-              return multiplier * a.applicant_name.localeCompare(b.applicant_name);
-            case "date":
-              const dateA = a.application_date || a.created_at || "";
-              const dateB = b.application_date || b.created_at || "";
-              return multiplier * dateA.localeCompare(dateB);
-            default:
-              return 0;
-          }
-        })
+        switch (sortCriteria) {
+          case "experience":
+            return multiplier * (a.years_experience - b.years_experience);
+          case "skills":
+            return multiplier * ((a.skills?.length || 0) - (b.skills?.length || 0));
+          case "rating":
+            return multiplier * ((a.rating || 0) - (b.rating || 0));
+          case "name":
+            return multiplier * a.applicant_name.localeCompare(b.applicant_name);
+          case "date":
+            const dateA = a.application_date || a.created_at || "";
+            const dateB = b.application_date || b.created_at || "";
+            return multiplier * dateA.localeCompare(dateB);
+          case "score":
+            return multiplier * (a.performanceScore - b.performanceScore);
+          default:
+            return 0;
+        }
+      })
     : [];
 
   // Utility function to format dates similar to admindashboard.
@@ -202,6 +269,14 @@ const SortingPage = () => {
                   {showFilters ? "Hide Filters" : "Show Filters"}
                 </Button>
                 <Button 
+                  variant="outline" 
+                  className="gap-2"
+                  onClick={() => setShowScoringConfig(!showScoringConfig)}
+                >
+                  <Sliders className="h-4 w-4" />
+                  {showScoringConfig ? "Hide Scoring" : "Scoring Config"}
+                </Button>
+                <Button 
                   variant="destructive" 
                   size="sm"
                   onClick={clearFilters}
@@ -237,6 +312,131 @@ const SortingPage = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Scoring configuration (conditionally displayed) */}
+            {showScoringConfig && (
+              <div className="border rounded-lg p-4 mt-4 space-y-4 bg-white/30">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Scoring Configuration</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={resetScoringConfig}
+                  >
+                    Reset to Default
+                  </Button>
+                </div>
+                <Separator />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label htmlFor="skills-weight">Skills Weight</Label>
+                        <span className="text-sm font-medium">{scoringConfig.skillsWeight}</span>
+                      </div>
+                      <Slider 
+                        id="skills-weight"
+                        min={0} 
+                        max={10} 
+                        step={1}
+                        value={[scoringConfig.skillsWeight]} 
+                        onValueChange={(value) => setScoringConfig(prev => ({ ...prev, skillsWeight: value[0] }))} 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Points per skill</p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label htmlFor="exp-weight">Experience Weight</Label>
+                        <span className="text-sm font-medium">{scoringConfig.experienceWeight}</span>
+                      </div>
+                      <Slider 
+                        id="exp-weight"
+                        min={0} 
+                        max={10} 
+                        step={1}
+                        value={[scoringConfig.experienceWeight]} 
+                        onValueChange={(value) => setScoringConfig(prev => ({ ...prev, experienceWeight: value[0] }))} 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Points per year of experience</p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label htmlFor="match-weight">Requirements Match Weight</Label>
+                        <span className="text-sm font-medium">{scoringConfig.matchWeight}</span>
+                      </div>
+                      <Slider 
+                        id="match-weight"
+                        min={0} 
+                        max={5} 
+                        step={0.5}
+                        value={[scoringConfig.matchWeight]} 
+                        onValueChange={(value) => setScoringConfig(prev => ({ ...prev, matchWeight: value[0] }))} 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Multiplier for requirements match</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label htmlFor="cert-bonus">Certification Bonus</Label>
+                        <span className="text-sm font-medium">{scoringConfig.certificationBonus}</span>
+                      </div>
+                      <Slider 
+                        id="cert-bonus"
+                        min={0} 
+                        max={50} 
+                        step={5}
+                        value={[scoringConfig.certificationBonus]} 
+                        onValueChange={(value) => setScoringConfig(prev => ({ ...prev, certificationBonus: value[0] }))} 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Bonus points for having certifications</p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label htmlFor="ref-bonus">References Bonus</Label>
+                        <span className="text-sm font-medium">{scoringConfig.referencesBonus}</span>
+                      </div>
+                      <Slider 
+                        id="ref-bonus"
+                        min={0} 
+                        max={50} 
+                        step={5}
+                        value={[scoringConfig.referencesBonus]} 
+                        onValueChange={(value) => setScoringConfig(prev => ({ ...prev, referencesBonus: value[0] }))} 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Bonus points for having references</p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label htmlFor="lang-weight">Languages Weight</Label>
+                        <span className="text-sm font-medium">{scoringConfig.languagesWeight}</span>
+                      </div>
+                      <Slider 
+                        id="lang-weight"
+                        min={0} 
+                        max={5} 
+                        step={0.5}
+                        value={[scoringConfig.languagesWeight]} 
+                        onValueChange={(value) => setScoringConfig(prev => ({ ...prev, languagesWeight: value[0] }))} 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Points per language known</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button onClick={saveScoringConfig}>
+                    Apply Scoring Configuration
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Advanced filters (conditionally displayed) */}
             {showFilters && (
@@ -339,6 +539,14 @@ const SortingPage = () => {
         {/* Sorting Controls */}
         <div className="mb-4 flex flex-wrap gap-2">
           <Button
+            variant={sortCriteria === "score" ? "default" : "outline"}
+            onClick={() => toggleSort("score")}
+            className="gap-2"
+          >
+            <ArrowUpDown className={`h-4 w-4 ${sortCriteria === "score" ? "text-primary-foreground" : "text-foreground"}`} />
+            Total Score {sortCriteria === "score" && `(${sortOrder === "asc" ? "↑" : "↓"})`}
+          </Button>
+          <Button
             variant={sortCriteria === "experience" ? "default" : "outline"}
             onClick={() => toggleSort("experience")}
             className="gap-2"
@@ -390,6 +598,7 @@ const SortingPage = () => {
           <CardHeader>
             <CardTitle>Sorted Applications</CardTitle>
             <CardDescription>
+              {sortCriteria === "score" && `Sorted by total score ${sortOrder === "desc" ? "highest to lowest" : "lowest to highest"}`}
               {sortCriteria === "experience" && `Sorted by years of experience ${sortOrder === "desc" ? "highest to lowest" : "lowest to highest"}`}
               {sortCriteria === "skills" && `Sorted by number of skills ${sortOrder === "desc" ? "highest to lowest" : "lowest to highest"}`}
               {sortCriteria === "rating" && `Sorted by rating ${sortOrder === "desc" ? "highest to lowest" : "lowest to highest"}`}
@@ -444,9 +653,14 @@ const SortingPage = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm text-gray-500">
-                        {formatDate(cv.application_date || cv.created_at)}
-                      </span>
+                      <Badge variant="secondary" className="mb-1">
+                        Score: {cv.performanceScore.toFixed(0)}
+                      </Badge>
+                      <div>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(cv.application_date || cv.created_at)}
+                        </span>
+                      </div>
                       <div className="mt-1">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           cv.status === "accepted"
