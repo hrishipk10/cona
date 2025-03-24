@@ -64,6 +64,22 @@ const CVDetail = () => {
           console.error("Error sending rejection message:", messageError);
           throw messageError;
         }
+      } else if (status === "accepted") {
+        // Send acceptance message for accepted CVs
+        const { error: messageError } = await supabase
+          .from("messages")
+          .insert([
+            {
+              user_id: id, // Using CV id as user_id
+              message: `Congratulations! Your application has been accepted. We would like to schedule an interview with you soon.`,
+              read: false,
+            },
+          ]);
+        
+        if (messageError) {
+          console.error("Error sending acceptance message:", messageError);
+          throw messageError;
+        }
       }
 
       return { status };

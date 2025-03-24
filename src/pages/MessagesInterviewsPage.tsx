@@ -266,12 +266,12 @@ const MessagesInterviewsPage = () => {
                               <h3 className="font-bold text-lg">{cv.applicant_name}</h3>
                               <p className="text-sm text-gray-500">{cv.current_job_title || "Applicant"} • {cv.years_experience} years</p>
                               <div className="flex flex-wrap gap-2 mt-2">
-                                {cv.skills.slice(0, 3).map((skill, index) => (
+                                {cv.skills && cv.skills.slice(0, 3).map((skill, index) => (
                                   <Badge key={index} variant="secondary" className="text-xs">
                                     {skill}
                                   </Badge>
                                 ))}
-                                {cv.skills.length > 3 && (
+                                {cv.skills && cv.skills.length > 3 && (
                                   <Badge variant="outline" className="text-xs">
                                     +{cv.skills.length - 3} more
                                   </Badge>
@@ -379,12 +379,12 @@ const MessagesInterviewsPage = () => {
                             <h3 className="font-bold text-lg">{cv.applicant_name}</h3>
                             <p className="text-sm text-gray-500">{cv.current_job_title || "Applicant"} • {cv.years_experience} years</p>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {cv.skills.slice(0, 3).map((skill, index) => (
+                              {cv.skills && cv.skills.slice(0, 3).map((skill, index) => (
                                 <Badge key={index} variant="secondary" className="text-xs">
                                   {skill}
                                 </Badge>
                               ))}
-                              {cv.skills.length > 3 && (
+                              {cv.skills && cv.skills.length > 3 && (
                                 <Badge variant="outline" className="text-xs">
                                   +{cv.skills.length - 3} more
                                 </Badge>
