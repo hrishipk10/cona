@@ -94,7 +94,11 @@ const CVDetail = () => {
           : "A rejection message has been sent to the candidate.",
       });
 
-      navigate(data.status === "accepted" ? "/admin/messages" : -1);
+      if (data.status === "accepted") {
+        navigate("/admin/messages");
+      } else {
+        navigate(-1); // Go back only for rejection case
+      }
     },
     onError: (error) => {
       console.error("Mutation error:", error);
