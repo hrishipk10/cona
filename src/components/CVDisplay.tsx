@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Edit,
@@ -35,9 +36,10 @@ interface CVDisplayProps {
     avatar_url?: string;
   };
   onEdit: () => void;
+  isAdmin?: boolean;
 }
 
-const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
+const CVDisplay = ({ cv, onEdit, isAdmin = false }: CVDisplayProps) => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-secondary shadow-lg rounded-lg">
       {/* Profile Header */}
@@ -269,16 +271,18 @@ const CVDisplay = ({ cv, onEdit }: CVDisplayProps) => {
       {/* Divider */}
       <div className="border-t border-border my-6"></div>
 
-      {/* Edit Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={onEdit}
-          className="flex items-center gap-2"
-        >
-          <Edit className="h-4 w-4" />
-          Edit CV
-        </Button>
-      </div>
+      {/* Edit Button - Only show for non-admin users or when explicitly allowed */}
+      {!isAdmin && (
+        <div className="flex justify-end">
+          <Button
+            onClick={onEdit}
+            className="flex items-center gap-2"
+          >
+            <Edit className="h-4 w-4" />
+            Edit CV
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

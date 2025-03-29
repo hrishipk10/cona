@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import CVDisplay from "@/components/CVDisplay";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Check, X } from "lucide-react";
+import { ArrowLeft, Check, X, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CVDetail = () => {
@@ -27,6 +28,25 @@ const CVDetail = () => {
       return data;
     },
   });
+
+  const { data: adminUser } = useQuery({
+    queryKey: ["isAdmin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { isAdmin: false };
+      
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return { isAdmin: data?.is_admin || false };
+    },
+  });
+
+  const isAdmin = adminUser?.isAdmin || false;
 
   const { mutate: updateStatus, isPending } = useMutation({
     mutationFn: async ({ status, reason }: { status: "accepted" | "rejected", reason?: string }) => {
@@ -51,7 +71,7 @@ const CVDetail = () => {
         .from("messages")
         .insert([
           {
-            cv_id: id, // Now using cv_id instead of user_id
+            cv_id: id,
             message: messageText,
             read: false,
           },
@@ -62,20 +82,36 @@ const CVDetail = () => {
         throw messageError;
       }
 
+      // Only create an interview if status is being changed to accepted and one doesn't already exist
       if (status === "accepted") {
-        const { error: interviewError } = await supabase
+        // Check if interview already exists
+        const { data: existingInterview, error: checkError } = await supabase
           .from("interviews")
-          .insert([
-            {
-              cv_id: id,
-              status: "scheduled",
-              scheduled_at: new Date().toISOString(), // Placeholder date, can be updated later
-            },
-          ]);
+          .select("id")
+          .eq("cv_id", id)
+          .maybeSingle();
         
-        if (interviewError) {
-          console.error("Error creating interview:", interviewError);
-          throw interviewError;
+        if (checkError) {
+          console.error("Error checking existing interview:", checkError);
+          throw checkError;
+        }
+        
+        // Only create a new interview if one doesn't exist
+        if (!existingInterview) {
+          const { error: interviewError } = await supabase
+            .from("interviews")
+            .insert([
+              {
+                cv_id: id,
+                status: "scheduled",
+                scheduled_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 1 week from now
+              },
+            ]);
+          
+          if (interviewError) {
+            console.error("Error creating interview:", interviewError);
+            throw interviewError;
+          }
         }
       }
 
@@ -88,17 +124,11 @@ const CVDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["interviews"] });
       
       toast({
-        title: data.status === "accepted" ? "Application Accepted" : "Application Rejected",
+        title: `Application ${data.status === "accepted" ? "Accepted" : "Rejected"}`,
         description: data.status === "accepted" 
           ? "The candidate has been moved to the interview stage." 
           : "A rejection message has been sent to the candidate.",
       });
-
-      if (data.status === "accepted") {
-        navigate("/admin/messages");
-      } else {
-        navigate(-1); // Go back only for rejection case
-      }
     },
     onError: (error) => {
       console.error("Mutation error:", error);
@@ -172,40 +202,68 @@ const CVDetail = () => {
             <CardTitle className="text-2xl font-bold">CV Detail</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <CVDisplay cv={cv} onEdit={handleEdit} />
+            <CVDisplay cv={cv} onEdit={handleEdit} isAdmin={isAdmin} />
           </CardContent>
           <CardFooter className="p-6 border-t border-gray-200 flex justify-between">
-            <Button onClick={handleEdit}>Edit CV</Button>
+            {!isAdmin && <Button onClick={handleEdit}>Edit CV</Button>}
             
             <div className="flex gap-2">
-              {cv.status === "pending" && (
+              {/* Always show status action buttons for admin users */}
+              {isAdmin && (
                 <>
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleReject}
-                    disabled={isPending}
-                  >
-                    <X className="mr-2 h-4 w-4" /> Reject
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    onClick={handleAccept}
-                    disabled={isPending}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Check className="mr-2 h-4 w-4" /> Accept
-                  </Button>
+                  {cv.status === "accepted" ? (
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleReject}
+                      disabled={isPending}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" /> Change to Rejected
+                    </Button>
+                  ) : cv.status === "rejected" ? (
+                    <Button 
+                      variant="default" 
+                      onClick={handleAccept}
+                      disabled={isPending}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" /> Change to Accepted
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleReject}
+                        disabled={isPending}
+                      >
+                        <X className="mr-2 h-4 w-4" /> Reject
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        onClick={handleAccept}
+                        disabled={isPending}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="mr-2 h-4 w-4" /> Accept
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
-              {cv.status === "accepted" && (
-                <Button variant="secondary" disabled>
-                  <Check className="mr-2 h-4 w-4" /> Accepted
-                </Button>
-              )}
-              {cv.status === "rejected" && (
-                <Button variant="secondary" disabled>
-                  <X className="mr-2 h-4 w-4" /> Rejected
-                </Button>
+              
+              {/* For non-admin users, show read-only status indicators */}
+              {!isAdmin && (
+                <>
+                  {cv.status === "accepted" && (
+                    <Button variant="secondary" disabled>
+                      <Check className="mr-2 h-4 w-4" /> Accepted
+                    </Button>
+                  )}
+                  {cv.status === "rejected" && (
+                    <Button variant="secondary" disabled>
+                      <X className="mr-2 h-4 w-4" /> Rejected
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </CardFooter>
