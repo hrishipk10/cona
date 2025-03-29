@@ -98,6 +98,13 @@ const CVDetail = () => {
         
         // Only create a new interview if one doesn't exist
         if (!existingInterview) {
+          // Get the current user's ID to set as recruiter_id
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          if (userError) throw userError;
+          if (!user) throw new Error("User not authenticated");
+          
+          console.log("Creating initial interview with recruiter_id:", user.id);
+          
           const { error: interviewError } = await supabase
             .from("interviews")
             .insert([
@@ -105,6 +112,7 @@ const CVDetail = () => {
                 cv_id: id,
                 status: "scheduled",
                 scheduled_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 1 week from now
+                recruiter_id: user.id, // Set the recruiter_id field
               },
             ]);
           

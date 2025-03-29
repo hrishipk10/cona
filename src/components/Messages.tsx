@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { MessageSquare, Loader } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -11,10 +11,14 @@ const Messages = () => {
   const { data: messages, isLoading, isError, error } = useQuery({
     queryKey: ['messages'],
     queryFn: async () => {
+      console.log("Fetching messages for client");
+      
       // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("No user found");
+
+      console.log("Current user ID:", user.id);
 
       // Find the CV associated with this user
       const { data: cv, error: cvError } = await supabase
@@ -23,8 +27,17 @@ const Messages = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       
-      if (cvError) throw cvError;
-      if (!cv) return [];
+      if (cvError) {
+        console.error("Error fetching CV:", cvError);
+        throw cvError;
+      }
+      
+      if (!cv) {
+        console.log("No CV found for user");
+        return [];
+      }
+
+      console.log("Found CV with ID:", cv.id);
 
       // Get all messages for this CV
       const { data, error: messagesError } = await supabase
@@ -33,7 +46,12 @@ const Messages = () => {
         .eq('cv_id', cv.id)
         .order('created_at', { ascending: false });
       
-      if (messagesError) throw messagesError;
+      if (messagesError) {
+        console.error("Error fetching messages:", messagesError);
+        throw messagesError;
+      }
+      
+      console.log("Fetched messages:", data);
       return data;
     },
   });

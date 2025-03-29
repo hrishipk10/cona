@@ -7,6 +7,14 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Function to determine if a path is active, handling both exact matches and child routes
+  const isActive = (path: string) => {
+    if (path === '/admin/dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <div className="fixed left-0 top-0 h-full w-[88px] bg-black flex flex-col items-center py-8 text-white">
       <div className="mb-12">
@@ -16,7 +24,7 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`${location.pathname === '/admin/dashboard' ? 'bg-gray-700' : ''} text-white`} 
+          className={`${isActive('/admin/dashboard') ? 'bg-gray-700' : ''} text-white`} 
           onClick={() => navigate("/admin/dashboard")}
         >
           <Home className="h-6 w-6" />
@@ -24,7 +32,7 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`${location.pathname === '/admin/sorting' ? 'bg-gray-700' : ''} text-white`} 
+          className={`${isActive('/admin/sorting') ? 'bg-gray-700' : ''} text-white`} 
           onClick={() => navigate("/admin/sorting")}
         >
           <SortAsc className="h-6 w-6" />
@@ -32,7 +40,7 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`${location.pathname === '/admin/messages' ? 'bg-gray-700' : ''} text-white`} 
+          className={`${isActive('/admin/messages') ? 'bg-gray-700' : ''} text-white`} 
           onClick={() => navigate("/admin/messages")}
         >
           <MessageSquare className="h-6 w-6" />
@@ -40,7 +48,7 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-white"
+          className={`${isActive('/admin/settings') ? 'bg-gray-700' : ''} text-white`}
           onClick={() => navigate("/admin/settings")}
         >
           <Settings className="h-6 w-6" />

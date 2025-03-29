@@ -73,7 +73,10 @@ const MessagesInterviewsPage = () => {
           },
         ]);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error sending message:", error);
+        throw error;
+      }
       return true;
     },
     onSuccess: () => {
@@ -95,20 +98,27 @@ const MessagesInterviewsPage = () => {
 
   const { mutate: updateInterviewDate, isPending: isUpdatingInterview } = useMutation({
     mutationFn: async (data: { cv_id: string; date: Date }) => {
+      // Get the current user's ID to set as recruiter_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("User not authenticated");
+
+      console.log("Checking for existing interview with cv_id:", data.cv_id);
       const { data: existingInterview, error: fetchError } = await supabase
         .from("interviews")
         .select("id")
         .eq("cv_id", data.cv_id)
         .maybeSingle();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error("Error checking existing interview:", fetchError);
+        throw fetchError;
+      }
 
-      // Get the current user's ID to set as recruiter_id
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) throw new Error("User not authenticated");
+      console.log("Existing interview check result:", existingInterview);
 
       if (existingInterview) {
+        console.log("Updating existing interview:", existingInterview.id);
         const { error } = await supabase
           .from("interviews")
           .update({
@@ -118,9 +128,13 @@ const MessagesInterviewsPage = () => {
           })
           .eq("id", existingInterview.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error("Interview update error:", error);
+          throw error;
+        }
       } else {
         console.log("Creating new interview for cv_id:", data.cv_id);
+        console.log("Current user ID (recruiter_id):", user.id);
         const { error } = await supabase
           .from("interviews")
           .insert([
@@ -152,7 +166,10 @@ const MessagesInterviewsPage = () => {
           },
         ]);
       
-      if (messageError) throw messageError;
+      if (messageError) {
+        console.error("Error sending interview message:", messageError);
+        throw messageError;
+      }
       
       return true;
     },
