@@ -16,7 +16,7 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`${location.pathname.includes('/admin/dashboard') ? 'bg-gray-700' : ''} text-white`} 
+          className={`${location.pathname === '/admin/dashboard' ? 'bg-gray-700' : ''} text-white`} 
           onClick={() => navigate("/admin/dashboard")}
         >
           <Home className="h-6 w-6" />
@@ -24,7 +24,7 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`${location.pathname.includes('/admin/sorting') ? 'bg-gray-700' : ''} text-white`} 
+          className={`${location.pathname === '/admin/sorting' ? 'bg-gray-700' : ''} text-white`} 
           onClick={() => navigate("/admin/sorting")}
         >
           <SortAsc className="h-6 w-6" />
@@ -32,12 +32,17 @@ export const Sidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`${location.pathname.includes('/admin/messages') ? 'bg-gray-700' : ''} text-white`} 
+          className={`${location.pathname === '/admin/messages' ? 'bg-gray-700' : ''} text-white`} 
           onClick={() => navigate("/admin/messages")}
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
-        <Button variant="ghost" size="icon" className="text-white">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white"
+          onClick={() => navigate("/admin/settings")}
+        >
           <Settings className="h-6 w-6" />
         </Button>
       </div>

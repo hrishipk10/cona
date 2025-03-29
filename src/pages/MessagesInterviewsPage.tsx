@@ -9,13 +9,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
-import { LogOut, Home, SortAsc, MessageCircle, Settings, ChevronRight } from "lucide-react";
+import { LogOut, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { Sidebar } from "@/components/admin/Sidebar";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
@@ -102,17 +103,24 @@ const MessagesInterviewsPage = () => {
 
       if (fetchError) throw fetchError;
 
+      // Get the current user's ID to set as recruiter_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("User not authenticated");
+
       if (existingInterview) {
         const { error } = await supabase
           .from("interviews")
           .update({
             scheduled_at: data.date.toISOString(),
             updated_at: new Date().toISOString(),
+            recruiter_id: user.id,
           })
           .eq("id", existingInterview.id);
         
         if (error) throw error;
       } else {
+        console.log("Creating new interview for cv_id:", data.cv_id);
         const { error } = await supabase
           .from("interviews")
           .insert([
@@ -120,10 +128,14 @@ const MessagesInterviewsPage = () => {
               cv_id: data.cv_id,
               scheduled_at: data.date.toISOString(),
               status: "scheduled",
+              recruiter_id: user.id,
             },
           ]);
         
-        if (error) throw error;
+        if (error) {
+          console.error("Interview insertion error:", error);
+          throw error;
+        }
       }
 
       // Send a notification message about the interview to the applicant
@@ -155,6 +167,7 @@ const MessagesInterviewsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
     onError: (error) => {
+      console.error("Failed to schedule interview:", error);
       toast({
         title: "Error",
         description: `Failed to schedule interview: ${error.message}`,
@@ -205,26 +218,8 @@ const MessagesInterviewsPage = () => {
   }
 
   return (
-    <div className="bg-primary relative hidden md:flex flex-col items-center justify-center p-8 min-h-screen">
-      <div className="fixed left-0 top-0 h-full w-[88px] bg-black flex flex-col items-center py-8 text-white">
-        <div className="mb-12">
-          <span className="text-xl font-bold">Cona</span>
-        </div>
-        <div className="flex flex-col items-center space-y-8">
-          <Button variant="ghost" size="icon" className="text-white" onClick={() => navigate("/admin/dashboard")}>
-            <Home className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white" onClick={() => navigate("/admin/sorting")}>
-            <SortAsc className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white bg-gray-700" onClick={() => navigate("/admin/messages")}>
-            <MessageCircle className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white">
-            <Settings className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
+    <div className="bg-primary relative md:flex flex-col items-center justify-center p-8 min-h-screen">
+      <Sidebar />
 
       <div className="ml-[88px] p-6 w-full">
         <div className="bg-secondary backdrop-blur rounded-xl p-6 mb-6">

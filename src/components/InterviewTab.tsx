@@ -73,7 +73,7 @@ const InterviewTab = () => {
       .order("scheduled_at", { ascending: true });
     if (interviewsError) throw interviewsError;
 
-    return interviews;
+    return interviews || [];
   };
 
   const {

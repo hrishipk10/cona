@@ -44,7 +44,7 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
                   variant="outline"
                   size="sm"
                   className="ml-2"
-                  onClick={() => navigate(`/admin/interviews/${interview.id}`)}
+                  onClick={() => navigate(`/admin/messages`)}
                 >
                   View
                 </Button>
@@ -59,7 +59,7 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
         <Button 
           variant="ghost" 
           className="w-full"
-          onClick={() => navigate("/admin/interviews")}
+          onClick={() => navigate("/admin/messages")}
         >
           Manage all interviews
         </Button>
