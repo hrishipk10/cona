@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FileText, MessageSquare, User, Calendar, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 import CVForm from "@/components/CVForm";
 import CVDisplay from "@/components/CVDisplay";
 import Messages from "@/components/Messages";
@@ -35,9 +36,65 @@ const ClientDashboard = () => {
       return data;
     },
   });
-  interface CVDisplayProps {
-    cv: {
-      applicant_name: string;}}
+
+  const { data: unreadMessagesCount } = useQuery({
+    queryKey: ['unreadMessages'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      // Find the CV associated with this user
+      const { data: cv, error: cvError } = await supabase
+        .from("cvs")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (cvError) throw cvError;
+      if (!cv) return 0;
+
+      // Count unread messages
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact' })
+        .eq('cv_id', cv.id)
+        .eq('read', false);
+      
+      if (error) throw error;
+      return count;
+    },
+    enabled: !!existingCV,
+  });
+
+  const { data: upcomingInterviews } = useQuery({
+    queryKey: ['upcomingInterviews'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      // Find the CV associated with this user
+      const { data: cv, error: cvError } = await supabase
+        .from("cvs")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (cvError) throw cvError;
+      if (!cv) return 0;
+
+      // Count upcoming interviews
+      const { count, error } = await supabase
+        .from('interviews')
+        .select('*', { count: 'exact' })
+        .eq('cv_id', cv.id)
+        .gt('scheduled_at', new Date().toISOString());
+      
+      if (error) throw error;
+      return count;
+    },
+    enabled: !!existingCV,
+  });
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -67,9 +124,9 @@ const ClientDashboard = () => {
             {existingCV ? `Hello ${existingCV.applicant_name}` : 'Submit Your CV'}
           </h1>
           <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
         </div>
 
         <Tabs defaultValue="cv" className="w-full">
@@ -85,10 +142,20 @@ const ClientDashboard = () => {
             <TabsTrigger value="interviews" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Interviews
+              {upcomingInterviews && upcomingInterviews > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {upcomingInterviews}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               Messages
+              {unreadMessagesCount && unreadMessagesCount > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {unreadMessagesCount}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 

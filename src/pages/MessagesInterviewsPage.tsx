@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -125,6 +126,22 @@ const MessagesInterviewsPage = () => {
         if (error) throw error;
       }
 
+      // Send a notification message about the interview to the applicant
+      const interview = existingInterview ? "rescheduled" : "scheduled";
+      const interviewMessage = `Your interview has been ${interview} for ${format(data.date, "EEEE, MMMM do, yyyy 'at' h:mm a")}. Please make sure you're available at this time.`;
+      
+      const { error: messageError } = await supabase
+        .from("messages")
+        .insert([
+          {
+            cv_id: data.cv_id,
+            message: interviewMessage,
+            read: false,
+          },
+        ]);
+      
+      if (messageError) throw messageError;
+      
       return true;
     },
     onSuccess: () => {
@@ -135,6 +152,7 @@ const MessagesInterviewsPage = () => {
       setSelectedDate(undefined);
       setSelectedCvId(null);
       queryClient.invalidateQueries({ queryKey: ["interviews"] });
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
     onError: (error) => {
       toast({

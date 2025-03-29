@@ -11,12 +11,29 @@ const Messages = () => {
   const { data: messages, isLoading, isError, error } = useQuery({
     queryKey: ['messages'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("No user found");
+
+      // Find the CV associated with this user
+      const { data: cv, error: cvError } = await supabase
+        .from("cvs")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (cvError) throw cvError;
+      if (!cv) return [];
+
+      // Get all messages for this CV
+      const { data, error: messagesError } = await supabase
         .from('messages')
         .select('*')
+        .eq('cv_id', cv.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (messagesError) throw messagesError;
       return data;
     },
   });
