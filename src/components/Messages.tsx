@@ -1,5 +1,5 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
 
 const Messages = () => {
+  const queryClient = useQueryClient();
+
   const { data: messages, isLoading, isError, error } = useQuery({
     queryKey: ['messages'],
     queryFn: async () => {
@@ -52,8 +54,30 @@ const Messages = () => {
       }
       
       console.log("Fetched messages:", data);
+      
+      // Mark all unread messages as read
+      if (data && data.length > 0) {
+        const unreadMessages = data.filter(msg => !msg.read);
+        if (unreadMessages.length > 0) {
+          console.log("Marking messages as read:", unreadMessages.length);
+          
+          const { error: updateError } = await supabase
+            .from('messages')
+            .update({ read: true })
+            .in('id', unreadMessages.map(msg => msg.id));
+            
+          if (updateError) {
+            console.error("Error marking messages as read:", updateError);
+          } else {
+            // Invalidate the unreadMessages query to update the badge count
+            queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });
+          }
+        }
+      }
+      
       return data;
     },
+    refetchInterval: 10000, // Refetch every 10 seconds to check for new messages
   });
 
   if (isLoading) {
