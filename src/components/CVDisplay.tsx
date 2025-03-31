@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Edit,
@@ -21,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CVDisplayProps {
   cv: {
@@ -46,13 +46,47 @@ interface CVDisplayProps {
     career_goals?: string;
     avatar_url?: string;
     theme?: string;
+    theme_color?: string;
   };
   onEdit: () => void;
   isAdmin?: boolean;
   onThemeChange?: (theme: string) => void;
+  onThemeColorChange?: (color: string) => void;
 }
 
-const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProps) => {
+// Theme color palettes
+const COLOR_PALETTES = {
+  default: [
+    { name: "Default Blue", value: "default" },
+    { name: "Dark", value: "dark" },
+    { name: "Blue", value: "blue" },
+    { name: "Green", value: "green" },
+    { name: "Purple", value: "purple" }
+  ],
+  minimal: [
+    { name: "Gray", value: "gray" },
+    { name: "Blue", value: "blue" },
+    { name: "Green", value: "green" },
+    { name: "Purple", value: "purple" },
+    { name: "Red", value: "red" }
+  ],
+  elegant: [
+    { name: "Blue", value: "blue" },
+    { name: "Teal", value: "teal" },
+    { name: "Purple", value: "purple" },
+    { name: "Burgundy", value: "burgundy" },
+    { name: "Forest", value: "forest" }
+  ],
+  creative: [
+    { name: "Orange", value: "orange" },
+    { name: "Pink", value: "pink" },
+    { name: "Teal", value: "teal" },
+    { name: "Purple", value: "purple" },
+    { name: "Green", value: "green" }
+  ]
+};
+
+const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorChange }: CVDisplayProps) => {
   const cvRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPDF = async () => {
@@ -80,38 +114,83 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
   };
 
   const getThemeBackground = (theme: string): string => {
-    switch (theme) {
+    const themeType = theme.split("-")[0] || "default";
+    const themeColor = theme.split("-")[1] || "";
+
+    switch (themeType) {
+      case 'minimal':
+        return getMinimalBackground(themeColor);
+      case 'elegant':
+        return getElegantBackground(themeColor);
+      case 'creative':
+        return getCreativeBackground(themeColor);
+      default:
+        return getDefaultBackground(themeColor);
+    }
+  };
+
+  const getDefaultBackground = (color: string): string => {
+    switch (color) {
       case 'dark': return '#1a1a1a';
       case 'blue': return '#f0f5ff';
       case 'green': return '#f0fff4';
       case 'purple': return '#f5f0ff';
-      case 'minimal': return '#ffffff';
-      case 'elegant': return '#f8f9fa';
-      case 'creative': return '#fff8f0';
       default: return '#ffffff';
     }
   };
 
-  const renderTheme = () => {
-    const themeValue = cv.theme || 'default';
-    
-    switch (themeValue) {
-      case 'minimal':
-        return renderMinimalTheme();
-      case 'elegant':
-        return renderElegantTheme();
-      case 'creative':
-        return renderCreativeTheme();
-      default:
-        return renderDefaultTheme(themeValue);
+  const getMinimalBackground = (color: string): string => {
+    switch (color) {
+      case 'blue': return '#f0f7ff';
+      case 'green': return '#f0faf4';
+      case 'purple': return '#f5f3ff';
+      case 'red': return '#fff5f5';
+      default: return '#ffffff'; // gray is default
     }
   };
 
-  const renderDefaultTheme = (theme: string) => {
-    const themeClasses = getThemeClasses(theme);
-    const headerClasses = getHeaderClasses(theme);
-    const accentClasses = getAccentClasses(theme);
-    const skillClasses = getSkillClasses(theme);
+  const getElegantBackground = (color: string): string => {
+    switch (color) {
+      case 'teal': return '#e6fffa';
+      case 'purple': return '#f6f5ff';
+      case 'burgundy': return '#fff5f7';
+      case 'forest': return '#f0fff4';
+      default: return '#f8f9fa'; // blue is default
+    }
+  };
+
+  const getCreativeBackground = (color: string): string => {
+    switch (color) {
+      case 'pink': return '#fff0f6';
+      case 'teal': return '#e6fffa';
+      case 'purple': return '#f3f0ff';
+      case 'green': return '#ebfbee';
+      default: return '#fff8f0'; // orange is default
+    }
+  };
+
+  const renderTheme = () => {
+    const themeParts = (cv.theme || 'default').split('-');
+    const themeType = themeParts[0];
+    const themeColor = themeParts[1] || '';
+    
+    switch (themeType) {
+      case 'minimal':
+        return renderMinimalTheme(themeColor);
+      case 'elegant':
+        return renderElegantTheme(themeColor);
+      case 'creative':
+        return renderCreativeTheme(themeColor);
+      default:
+        return renderDefaultTheme(themeColor);
+    }
+  };
+
+  const renderDefaultTheme = (themeColor: string) => {
+    const themeClasses = getThemeClasses(themeColor);
+    const headerClasses = getHeaderClasses(themeColor);
+    const accentClasses = getAccentClasses(themeColor);
+    const skillClasses = getSkillClasses(themeColor);
 
     return (
       <div className={`max-w-4xl mx-auto p-6 rounded-lg ${themeClasses}`}>
@@ -347,9 +426,12 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
     );
   };
 
-  const renderMinimalTheme = () => {
+  const renderMinimalTheme = (themeColor: string = '') => {
+    const accentColor = getMinimalAccentColor(themeColor);
+    const bgColor = getMinimalBackground(themeColor);
+
     return (
-      <div className="max-w-4xl mx-auto p-8 bg-white rounded-lg shadow-sm">
+      <div className={`max-w-4xl mx-auto p-8 rounded-lg shadow-sm`} style={{ backgroundColor: bgColor }}>
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-sans font-bold tracking-tight text-gray-900 mb-2">
@@ -363,19 +445,19 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           <div className="flex justify-center flex-wrap gap-4 text-sm text-gray-600">
             {cv.email && (
               <span className="flex items-center">
-                <Mail className="w-4 h-4 mr-1 text-gray-400" />
+                <Mail className={`w-4 h-4 mr-1`} style={{ color: accentColor }} />
                 {cv.email}
               </span>
             )}
             {cv.phone && (
               <span className="flex items-center">
-                <Phone className="w-4 h-4 mr-1 text-gray-400" />
+                <Phone className={`w-4 h-4 mr-1`} style={{ color: accentColor }} />
                 {cv.phone}
               </span>
             )}
             {cv.address && (
               <span className="flex items-center">
-                <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                <MapPin className={`w-4 h-4 mr-1`} style={{ color: accentColor }} />
                 {cv.address}
               </span>
             )}
@@ -389,6 +471,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-700"
+                style={{ color: accentColor }}
               >
                 <Linkedin className="w-5 h-5" />
               </a>
@@ -399,6 +482,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-700"
+                style={{ color: accentColor }}
               >
                 <Github className="w-5 h-5" />
               </a>
@@ -409,6 +493,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-700"
+                style={{ color: accentColor }}
               >
                 <Globe className="w-5 h-5" />
               </a>
@@ -419,7 +504,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
         <div className="grid grid-cols-1 gap-8">
           {/* Experience */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+            <h2 className="text-lg font-semibold border-b border-gray-200 pb-2 mb-4" style={{ color: accentColor }}>
               Professional Experience
             </h2>
             <p className="mb-2">
@@ -438,14 +523,15 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
 
           {/* Skills */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+            <h2 className="text-lg font-semibold border-b border-gray-200 pb-2 mb-4" style={{ color: accentColor }}>
               Skills
             </h2>
             <div className="flex flex-wrap gap-2">
               {cv.skills.map((skill, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                  className="px-3 py-1 rounded-md text-sm text-white"
+                  style={{ backgroundColor: accentColor }}
                 >
                   {skill}
                 </span>
@@ -456,14 +542,15 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           {/* Languages */}
           {cv.languages_known && cv.languages_known.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+              <h2 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4" style={{ color: accentColor }}>
                 Languages
               </h2>
               <div className="flex flex-wrap gap-2">
                 {cv.languages_known.map((language, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                    className="px-3 py-1 rounded-md text-sm text-white"
+                    style={{ backgroundColor: accentColor }}
                   >
                     {language}
                   </span>
@@ -475,7 +562,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           {/* Education */}
           {cv.education && (
             <div>
-              <h2 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+              <h2 className="text-lg font-semibold border-b border-gray-200 pb-2 mb-4" style={{ color: accentColor }}>
                 Education
               </h2>
               <p>{cv.education}</p>
@@ -485,7 +572,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           {/* Certifications */}
           {cv.certifications && (
             <div>
-              <h2 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+              <h2 className="text-lg font-semibold border-b border-gray-200 pb-2 mb-4" style={{ color: accentColor }}>
                 Certifications
               </h2>
               <p>{cv.certifications}</p>
@@ -495,7 +582,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           {/* Additional Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div>
-              <h3 className="text-md font-medium text-gray-700 mb-2">Work Preferences</h3>
+              <h3 className="text-md font-medium mb-2" style={{ color: accentColor }}>Work Preferences</h3>
               <p className="text-sm">
                 <span className="font-medium">Willing to Relocate:</span>{" "}
                 {cv.willingness_to_relocate ? "Yes" : "No"}
@@ -508,7 +595,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
 
             {cv.desired_salary && (
               <div>
-                <h3 className="text-md font-medium text-gray-700 mb-2">Salary Expectation</h3>
+                <h3 className="text-md font-medium mb-2" style={{ color: accentColor }}>Salary Expectation</h3>
                 <p className="text-sm">{cv.desired_salary}</p>
               </div>
             )}
@@ -533,50 +620,55 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
     );
   };
 
-  const renderElegantTheme = () => {
+  const renderElegantTheme = (themeColor: string = '') => {
+    const accentColor = getElegantAccentColor(themeColor);
+    const bgColor = getElegantBackground(themeColor);
+    const headerColor = getElegantHeaderColor(themeColor);
+
     return (
-      <div className="max-w-4xl mx-auto p-10 bg-[#f8f9fa] rounded-lg shadow-md">
+      <div className="max-w-4xl mx-auto p-10 rounded-lg shadow-md" style={{ backgroundColor: bgColor }}>
         {/* Header with avatar and name */}
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-10">
           {cv.avatar_url ? (
             <img
               src={cv.avatar_url}
               alt="Profile"
-              className="w-36 h-36 rounded-full object-cover border-4 border-[#eaeaea] shadow-md"
+              className="w-36 h-36 rounded-full object-cover border-4 shadow-md"
+              style={{ borderColor: headerColor }}
             />
           ) : (
-            <div className="w-36 h-36 rounded-full bg-[#eaeaea] flex items-center justify-center shadow-md">
-              <Upload className="w-10 h-10 text-gray-400" />
+            <div className="w-36 h-36 rounded-full flex items-center justify-center shadow-md" style={{ backgroundColor: headerColor }}>
+              <Upload className="w-10 h-10 text-white" />
             </div>
           )}
           
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-4xl font-sans font-bold tracking-tight text-[#2c3e50] mb-1">
+            <h1 className="text-4xl font-sans font-bold tracking-tight mb-1" style={{ color: accentColor }}>
               {cv.applicant_name}
             </h1>
             
             {cv.current_job_title && (
-              <p className="text-xl text-[#7f8c8d] mb-4 font-light">
+              <p className="text-xl mb-4 font-light text-gray-600">
                 {cv.current_job_title}
               </p>
             )}
             
-            <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm text-[#7f8c8d]">
+            <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm text-gray-600">
               {cv.email && (
                 <span className="flex items-center">
-                  <Mail className="w-4 h-4 mr-1 text-[#3498db]" />
+                  <Mail className="w-4 h-4 mr-1" style={{ color: accentColor }} />
                   {cv.email}
                 </span>
               )}
               {cv.phone && (
                 <span className="flex items-center">
-                  <Phone className="w-4 h-4 mr-1 text-[#3498db]" />
+                  <Phone className="w-4 h-4 mr-1" style={{ color: accentColor }} />
                   {cv.phone}
                 </span>
               )}
               {cv.address && (
                 <span className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1 text-[#3498db]" />
+                  <MapPin className="w-4 h-4 mr-1" style={{ color: accentColor }} />
                   {cv.address}
                 </span>
               )}
@@ -589,7 +681,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                   href={cv.linkedin_profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#3498db] hover:text-[#2980b9] transition-colors"
+                  style={{ color: accentColor }}
+                  className="hover:opacity-80 transition-colors"
                 >
                   <Linkedin className="w-5 h-5" />
                 </a>
@@ -599,7 +692,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                   href={cv.github_profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#3498db] hover:text-[#2980b9] transition-colors"
+                  style={{ color: accentColor }}
+                  className="hover:opacity-80 transition-colors"
                 >
                   <Github className="w-5 h-5" />
                 </a>
@@ -609,7 +703,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                   href={cv.portfolio_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#3498db] hover:text-[#2980b9] transition-colors"
+                  style={{ color: accentColor }}
+                  className="hover:opacity-80 transition-colors"
                 >
                   <Globe className="w-5 h-5" />
                 </a>
@@ -622,10 +717,10 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             <span
               className={`capitalize inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${
                 cv.status === "accepted"
-                  ? "bg-[#e6f7ee] text-[#27ae60]"
+                  ? "bg-green-100 text-green-800"
                   : cv.status === "rejected"
-                  ? "bg-[#fdecee] text-[#e74c3c]"
-                  : "bg-[#fff7e6] text-[#f39c12]"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-yellow-100 text-yellow-800"
               }`}
             >
               {cv.status}
@@ -634,8 +729,9 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
         </div>
         
         {/* Elegant divider */}
-        <div className="relative h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-10">
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rotate-45 bg-[#f8f9fa] border border-gray-300"></div>
+        <div className="relative h-px mb-10" style={{ background: `linear-gradient(to right, transparent, ${accentColor}40, transparent)` }}>
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rotate-45" 
+            style={{ backgroundColor: bgColor, borderColor: accentColor, borderWidth: '1px' }}></div>
         </div>
         
         {/* Main content */}
@@ -644,14 +740,16 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           <div className="space-y-8">
             {/* Skills */}
             <div>
-              <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+              <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                 Skills
               </h2>
               <div className="flex flex-wrap gap-2">
                 {cv.skills.map((skill, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-[#ecf0f1] text-[#2c3e50] rounded-md text-sm"
+                    className="px-3 py-1 rounded-md text-sm"
+                    style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
                   >
                     {skill}
                   </span>
@@ -662,14 +760,16 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             {/* Languages */}
             {cv.languages_known && cv.languages_known.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+                <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                  style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                   Languages
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {cv.languages_known.map((language, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-[#ecf0f1] text-[#2c3e50] rounded-md text-sm"
+                      className="px-3 py-1 rounded-md text-sm"
+                      style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
                     >
                       {language}
                     </span>
@@ -680,17 +780,18 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             
             {/* Work Preferences */}
             <div>
-              <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+              <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                 Work Preferences
               </h2>
               <div className="space-y-2">
                 <p className="flex items-center gap-2">
-                  <span className={cv.willingness_to_relocate ? "text-[#27ae60]" : "text-[#e74c3c]"}>●</span>
+                  <span className={cv.willingness_to_relocate ? "text-green-600" : "text-red-600"}>●</span>
                   <span className="font-medium">Willing to Relocate:</span>{" "}
                   {cv.willingness_to_relocate ? "Yes" : "No"}
                 </p>
                 <p className="flex items-center gap-2">
-                  <span className={cv.availability_for_remote_work ? "text-[#27ae60]" : "text-[#e74c3c]"}>●</span>
+                  <span className={cv.availability_for_remote_work ? "text-green-600" : "text-red-600"}>●</span>
                   <span className="font-medium">Remote Work:</span>{" "}
                   {cv.availability_for_remote_work ? "Yes" : "No"}
                 </p>
@@ -700,10 +801,11 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             {/* Desired Salary */}
             {cv.desired_salary && (
               <div>
-                <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+                <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                  style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                   Salary Expectation
                 </h2>
-                <p className="text-[#2c3e50] font-mono font-semibold">{cv.desired_salary}</p>
+                <p className="font-mono font-semibold" style={{ color: accentColor }}>{cv.desired_salary}</p>
               </div>
             )}
           </div>
@@ -712,18 +814,19 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           <div className="space-y-8 md:col-span-2">
             {/* Experience */}
             <div>
-              <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+              <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                 Professional Experience
               </h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[#3498db] font-semibold">{cv.years_experience} Years Experience</span>
+                  <span style={{ color: accentColor }} className="font-semibold">{cv.years_experience} Years Experience</span>
                   {cv.industry_experience && (
-                    <span className="text-[#7f8c8d] text-sm">{cv.industry_experience}</span>
+                    <span className="text-gray-500 text-sm">{cv.industry_experience}</span>
                   )}
                 </div>
                 {cv.career_goals && (
-                  <div className="mt-2 p-4 bg-white rounded-md border-l-4 border-[#3498db] italic text-[#7f8c8d]">
+                  <div className="mt-2 p-4 bg-white rounded-md border-l-4 italic text-gray-600" style={{ borderColor: accentColor }}>
                     <p>{cv.career_goals}</p>
                   </div>
                 )}
@@ -733,30 +836,33 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             {/* Education */}
             {cv.education && (
               <div>
-                <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+                <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                  style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                   Education
                 </h2>
-                <p className="text-[#34495e]">{cv.education}</p>
+                <p className="text-gray-700">{cv.education}</p>
               </div>
             )}
             
             {/* Certifications */}
             {cv.certifications && (
               <div>
-                <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+                <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                  style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                   Certifications
                 </h2>
-                <p className="text-[#34495e]">{cv.certifications}</p>
+                <p className="text-gray-700">{cv.certifications}</p>
               </div>
             )}
             
             {/* References */}
             {cv.references && (
               <div>
-                <h2 className="text-lg font-semibold text-[#2c3e50] border-b border-[#eaeaea] pb-2 mb-4">
+                <h2 className="text-lg font-semibold border-b pb-2 mb-4" 
+                  style={{ color: accentColor, borderColor: `${accentColor}40` }}>
                   References
                 </h2>
-                <p className="text-[#34495e] italic">{cv.references}</p>
+                <p className="text-gray-700 italic">{cv.references}</p>
               </div>
             )}
           </div>
@@ -765,11 +871,15 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
     );
   };
 
-  const renderCreativeTheme = () => {
+  const renderCreativeTheme = (themeColor: string = '') => {
+    const colors = getCreativeColors(themeColor);
+
     return (
-      <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#fff8f0] to-[#ffecdb] rounded-xl shadow-lg overflow-hidden">
+      <div className="max-w-4xl mx-auto rounded-xl shadow-lg overflow-hidden" 
+        style={{ background: `linear-gradient(to bottom right, ${colors.bgStart}, ${colors.bgEnd})` }}>
         {/* Header */}
-        <div className="relative h-48 bg-gradient-to-r from-[#f9a826] to-[#ff7a45] rounded-t-xl">
+        <div className="relative h-48 rounded-t-xl" 
+          style={{ background: `linear-gradient(to right, ${colors.primary}, ${colors.secondary})` }}>
           <div className="absolute -bottom-16 left-10">
             {cv.avatar_url ? (
               <img
@@ -779,7 +889,7 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
               />
             ) : (
               <div className="w-32 h-32 rounded-xl bg-white flex items-center justify-center shadow-lg">
-                <Upload className="w-10 h-10 text-[#f9a826]" />
+                <Upload className="w-10 h-10" style={{ color: colors.primary }} />
               </div>
             )}
           </div>
@@ -799,10 +909,10 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
           <span
             className={`capitalize inline-block px-4 py-1.5 rounded-full text-sm font-medium ${
               cv.status === "accepted"
-                ? "bg-[#c8f7e1] text-[#0e9f6e]"
+                ? "bg-green-100 text-green-800"
                 : cv.status === "rejected"
-                ? "bg-[#fde8e8] text-[#e02424]"
-                : "bg-[#fef3c7] text-[#d97706]"
+                ? "bg-red-100 text-red-800"
+                : "bg-yellow-100 text-yellow-800"
             }`}
           >
             {cv.status}
@@ -813,22 +923,22 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
         <div className="p-8 pt-16">
           {/* Contact & Social Row */}
           <div className="flex flex-wrap justify-between items-center mb-10 p-4 bg-white/50 rounded-lg shadow-sm">
-            <div className="flex flex-wrap gap-4 text-sm text-[#6b7280]">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               {cv.email && (
-                <a href={`mailto:${cv.email}`} className="flex items-center hover:text-[#f9a826] transition-colors">
-                  <Mail className="w-4 h-4 mr-1 text-[#f9a826]" />
+                <a href={`mailto:${cv.email}`} className="flex items-center hover:text-opacity-80 transition-colors" style={{ color: colors.primary }}>
+                  <Mail className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
                   {cv.email}
                 </a>
               )}
               {cv.phone && (
-                <a href={`tel:${cv.phone}`} className="flex items-center hover:text-[#f9a826] transition-colors">
-                  <Phone className="w-4 h-4 mr-1 text-[#f9a826]" />
+                <a href={`tel:${cv.phone}`} className="flex items-center hover:text-opacity-80 transition-colors" style={{ color: colors.primary }}>
+                  <Phone className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
                   {cv.phone}
                 </a>
               )}
               {cv.address && (
-                <span className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1 text-[#f9a826]" />
+                <span className="flex items-center" style={{ color: colors.primary }}>
+                  <MapPin className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
                   {cv.address}
                 </span>
               )}
@@ -840,7 +950,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                   href={cv.linkedin_profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#f9a826] hover:bg-[#f9a826] hover:text-white transition-all shadow-sm"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:text-white transition-all shadow-sm"
+                  style={{ color: colors.primary, hover: { backgroundColor: colors.primary } }}
                 >
                   <Linkedin className="w-4 h-4" />
                 </a>
@@ -850,7 +961,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                   href={cv.github_profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#f9a826] hover:bg-[#f9a826] hover:text-white transition-all shadow-sm"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:text-white transition-all shadow-sm"
+                  style={{ color: colors.primary, hover: { backgroundColor: colors.primary } }}
                 >
                   <Github className="w-4 h-4" />
                 </a>
@@ -860,7 +972,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
                   href={cv.portfolio_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#f9a826] hover:bg-[#f9a826] hover:text-white transition-all shadow-sm"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:text-white transition-all shadow-sm"
+                  style={{ color: colors.primary, hover: { backgroundColor: colors.primary } }}
                 >
                   <Globe className="w-4 h-4" />
                 </a>
@@ -874,15 +987,16 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             <div className="md:col-span-2 space-y-8">
               {/* Skills */}
               <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                  <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                  <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                   Skills
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {cv.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-white text-[#f9a826] border border-[#f9a826]/20 rounded-full text-sm"
+                      className="px-3 py-1 bg-white border rounded-full text-sm"
+                      style={{ color: colors.primary, borderColor: `${colors.primary}20` }}
                     >
                       {skill}
                     </span>
@@ -893,15 +1007,16 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
               {/* Languages */}
               {cv.languages_known && cv.languages_known.length > 0 && (
                 <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                     Languages
                   </h2>
                   <div className="flex flex-wrap gap-2">
                     {cv.languages_known.map((language, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-white text-[#f9a826] border border-[#f9a826]/20 rounded-full text-sm"
+                        className="px-3 py-1 bg-white border rounded-full text-sm"
+                        style={{ color: colors.primary, borderColor: `${colors.primary}20` }}
                       >
                         {language}
                       </span>
@@ -912,18 +1027,18 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
               
               {/* Work Preferences */}
               <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                  <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                  <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                   Work Preferences
                 </h2>
                 <div className="space-y-3">
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${cv.willingness_to_relocate ? "bg-[#0e9f6e]" : "bg-[#e02424]"}`}></div>
+                    <div className={`w-3 h-3 rounded-full mr-3 ${cv.willingness_to_relocate ? "bg-green-500" : "bg-red-500"}`}></div>
                     <span className="font-medium">Relocation:</span>
                     <span className="ml-2">{cv.willingness_to_relocate ? "Yes" : "No"}</span>
                   </div>
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${cv.availability_for_remote_work ? "bg-[#0e9f6e]" : "bg-[#e02424]"}`}></div>
+                    <div className={`w-3 h-3 rounded-full mr-3 ${cv.availability_for_remote_work ? "bg-green-500" : "bg-red-500"}`}></div>
                     <span className="font-medium">Remote Work:</span>
                     <span className="ml-2">{cv.availability_for_remote_work ? "Yes" : "No"}</span>
                   </div>
@@ -933,12 +1048,12 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
               {/* Desired Salary */}
               {cv.desired_salary && (
                 <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                     Salary Expectation
                   </h2>
-                  <div className="p-3 bg-[#f9a826]/10 rounded-lg text-center">
-                    <span className="text-lg font-mono font-semibold text-[#f9a826]">{cv.desired_salary}</span>
+                  <div className="p-3 rounded-lg text-center" style={{ backgroundColor: `${colors.primary}10` }}>
+                    <span className="text-lg font-mono font-semibold" style={{ color: colors.primary }}>{cv.desired_salary}</span>
                   </div>
                 </div>
               )}
@@ -948,22 +1063,22 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
             <div className="md:col-span-3 space-y-8">
               {/* Experience */}
               <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                  <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                  <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                   Professional Experience
                 </h2>
                 <div className="space-y-4">
                   <div className="flex flex-wrap justify-between items-center">
-                    <div className="px-4 py-2 bg-[#f9a826] text-white rounded-full">
+                    <div className="px-4 py-2 text-white rounded-full" style={{ backgroundColor: colors.primary }}>
                       {cv.years_experience} Years Experience
                     </div>
                     {cv.industry_experience && (
-                      <span className="text-[#6b7280] text-sm">{cv.industry_experience}</span>
+                      <span className="text-gray-600 text-sm">{cv.industry_experience}</span>
                     )}
                   </div>
                   {cv.career_goals && (
-                    <div className="mt-3 p-4 bg-white rounded-md border-l-4 border-[#f9a826]">
-                      <p className="text-[#4b5563]">{cv.career_goals}</p>
+                    <div className="mt-3 p-4 bg-white rounded-md border-l-4" style={{ borderColor: colors.primary }}>
+                      <p className="text-gray-700">{cv.career_goals}</p>
                     </div>
                   )}
                 </div>
@@ -972,33 +1087,33 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
               {/* Education */}
               {cv.education && (
                 <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                     Education
                   </h2>
-                  <p className="text-[#4b5563]">{cv.education}</p>
+                  <p className="text-gray-700">{cv.education}</p>
                 </div>
               )}
               
               {/* Certifications */}
               {cv.certifications && (
                 <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                     Certifications
                   </h2>
-                  <p className="text-[#4b5563]">{cv.certifications}</p>
+                  <p className="text-gray-700">{cv.certifications}</p>
                 </div>
               )}
               
               {/* References */}
               {cv.references && (
                 <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold text-[#f9a826] mb-4 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-[#f9a826] rounded-full mr-2"></span>
+                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
+                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
                     References
                   </h2>
-                  <p className="text-[#4b5563] italic">{cv.references}</p>
+                  <p className="text-gray-700 italic">{cv.references}</p>
                 </div>
               )}
             </div>
@@ -1006,6 +1121,82 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
         </div>
       </div>
     );
+  };
+
+  // Helper functions for color schemes
+  const getMinimalAccentColor = (color: string): string => {
+    switch (color) {
+      case 'blue': return '#3b82f6';
+      case 'green': return '#10b981';
+      case 'purple': return '#8b5cf6';
+      case 'red': return '#ef4444';
+      default: return '#4b5563'; // gray (default)
+    }
+  };
+
+  const getElegantAccentColor = (color: string): string => {
+    switch (color) {
+      case 'teal': return '#0d9488';
+      case 'purple': return '#8b5cf6';
+      case 'burgundy': return '#be185d';
+      case 'forest': return '#166534';
+      default: return '#3b82f6'; // blue (default)
+    }
+  };
+
+  const getElegantHeaderColor = (color: string): string => {
+    switch (color) {
+      case 'teal': return '#99f6e4';
+      case 'purple': return '#d8b4fe';
+      case 'burgundy': return '#fbcfe8';
+      case 'forest': return '#bbf7d0';
+      default: return '#bfdbfe'; // blue (default)
+    }
+  };
+
+  const getCreativeColors = (color: string): {primary: string, secondary: string, accent: string, bgStart: string, bgEnd: string} => {
+    switch (color) {
+      case 'pink':
+        return {
+          primary: '#ec4899',
+          secondary: '#f472b6',
+          accent: '#ec4899',
+          bgStart: '#fff0f6',
+          bgEnd: '#ffe4e6'
+        };
+      case 'teal':
+        return {
+          primary: '#14b8a6',
+          secondary: '#2dd4bf',
+          accent: '#14b8a6',
+          bgStart: '#e6fffa',
+          bgEnd: '#ccfbf1'
+        };
+      case 'purple':
+        return {
+          primary: '#8b5cf6',
+          secondary: '#a78bfa',
+          accent: '#8b5cf6',
+          bgStart: '#f3f0ff',
+          bgEnd: '#e9d5ff'
+        };
+      case 'green':
+        return {
+          primary: '#10b981',
+          secondary: '#34d399',
+          accent: '#10b981',
+          bgStart: '#ebfbee',
+          bgEnd: '#d1fae5'
+        };
+      default: // orange
+        return {
+          primary: '#f97316',
+          secondary: '#fb923c',
+          accent: '#f97316',
+          bgStart: '#fff8f0',
+          bgEnd: '#ffedd5'
+        };
+    }
   };
 
   const getThemeClasses = (theme: string): string => {
@@ -1083,33 +1274,66 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange }: CVDisplayProp
     }
   };
 
-  const themeValue = cv.theme || 'default';
+  // Extract theme type and color
+  const getThemeTypeAndColor = (themeValue: string): { type: string, color: string } => {
+    const parts = themeValue.split('-');
+    return {
+      type: parts[0] || 'default',
+      color: parts[1] || ''
+    };
+  };
+
+  const { type: themeType, color: themeColor } = getThemeTypeAndColor(cv.theme || 'default');
 
   return (
     <div>
       {!isAdmin && onThemeChange && (
-        <div className="mb-6 flex justify-end">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">Theme:</span>
-            <Select
-              value={themeValue}
-              onValueChange={onThemeChange}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="blue">Blue</SelectItem>
-                <SelectItem value="green">Green</SelectItem>
-                <SelectItem value="purple">Purple</SelectItem>
-                <SelectItem value="minimal">Minimal</SelectItem>
-                <SelectItem value="elegant">Elegant</SelectItem>
-                <SelectItem value="creative">Creative</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="mb-6">
+          <Tabs defaultValue="layout" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="layout">Layout</TabsTrigger>
+              <TabsTrigger value="color">Color</TabsTrigger>
+            </TabsList>
+            <TabsContent value="layout">
+              <Select
+                value={themeType}
+                onValueChange={(value) => {
+                  const newTheme = themeColor ? `${value}-${themeColor}` : value;
+                  onThemeChange(newTheme);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select theme layout" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default</SelectItem>
+                  <SelectItem value="minimal">Minimal</SelectItem>
+                  <SelectItem value="elegant">Elegant</SelectItem>
+                  <SelectItem value="creative">Creative</SelectItem>
+                </SelectContent>
+              </Select>
+            </TabsContent>
+            <TabsContent value="color">
+              <Select
+                value={themeColor || ''}
+                onValueChange={(value) => {
+                  const newTheme = value ? `${themeType}-${value}` : themeType;
+                  onThemeChange(newTheme);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select color scheme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOR_PALETTES[themeType as keyof typeof COLOR_PALETTES]?.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 
