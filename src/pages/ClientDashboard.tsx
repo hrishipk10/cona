@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FileText, MessageSquare, User, Calendar, LogOut } from "lucide-react";
@@ -19,6 +18,7 @@ const ClientDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: existingCV, isLoading } = useQuery({
     queryKey: ['userCV'],
@@ -43,7 +43,6 @@ const ClientDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      // Find the CV associated with this user
       const { data: cv, error: cvError } = await supabase
         .from("cvs")
         .select("id")
@@ -53,7 +52,6 @@ const ClientDashboard = () => {
       if (cvError) throw cvError;
       if (!cv) return 0;
 
-      // Count unread messages
       const { count, error } = await supabase
         .from('messages')
         .select('*', { count: 'exact' })
@@ -72,7 +70,6 @@ const ClientDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      // Find the CV associated with this user
       const { data: cv, error: cvError } = await supabase
         .from("cvs")
         .select("id")
@@ -82,7 +79,6 @@ const ClientDashboard = () => {
       if (cvError) throw cvError;
       if (!cv) return 0;
 
-      // Count upcoming interviews
       const { count, error } = await supabase
         .from('interviews')
         .select('*', { count: 'exact' })
@@ -94,6 +90,33 @@ const ClientDashboard = () => {
     },
     enabled: !!existingCV,
   });
+
+  const handleThemeChange = async (theme: string) => {
+    if (!existingCV) return;
+    
+    try {
+      const { error } = await supabase
+        .from('cvs')
+        .update({ theme })
+        .eq('id', existingCV.id);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['userCV'] });
+      
+      toast({
+        title: "Theme updated",
+        description: "Your CV theme has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating theme:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update theme.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -173,7 +196,11 @@ const ClientDashboard = () => {
               </CardHeader>
               <CardContent>
                 {existingCV && !isEditing ? (
-                  <CVDisplay cv={existingCV} onEdit={() => setIsEditing(true)} />
+                  <CVDisplay 
+                    cv={existingCV} 
+                    onEdit={() => setIsEditing(true)} 
+                    onThemeChange={handleThemeChange} 
+                  />
                 ) : (
                   <CVForm
                     existingCV={existingCV}
