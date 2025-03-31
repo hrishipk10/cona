@@ -7,7 +7,6 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Function to determine if a path is active, handling both exact matches and child routes
   const isActive = (path: string) => {
     if (path === '/admin/dashboard') {
       return location.pathname === path;
@@ -20,7 +19,7 @@ export const Sidebar = () => {
       <div className="mb-12">
         <span className="text-xl font-bold">Cona</span>
       </div>
-      <div className="flex flex-col items-center space-y-8">
+      <nav className="flex flex-col items-center space-y-8">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -53,7 +52,7 @@ export const Sidebar = () => {
         >
           <Settings className="h-6 w-6" />
         </Button>
-      </div>
+      </nav>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,14 +13,10 @@ const Messages = () => {
   const { data: messages, isLoading, isError, error } = useQuery({
     queryKey: ['messages'],
     queryFn: async () => {
-      console.log("Fetching messages for client");
-      
       // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("No user found");
-
-      console.log("Current user ID:", user.id);
 
       // Find the CV associated with this user
       const { data: cv, error: cvError } = await supabase
@@ -29,17 +25,8 @@ const Messages = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       
-      if (cvError) {
-        console.error("Error fetching CV:", cvError);
-        throw cvError;
-      }
-      
-      if (!cv) {
-        console.log("No CV found for user");
-        return [];
-      }
-
-      console.log("Found CV with ID:", cv.id);
+      if (cvError) throw cvError;
+      if (!cv) return [];
 
       // Get all messages for this CV
       const { data, error: messagesError } = await supabase
@@ -48,36 +35,22 @@ const Messages = () => {
         .eq('cv_id', cv.id)
         .order('created_at', { ascending: false });
       
-      if (messagesError) {
-        console.error("Error fetching messages:", messagesError);
-        throw messagesError;
-      }
-      
-      console.log("Fetched messages:", data);
+      if (messagesError) throw messagesError;
       
       // Mark all unread messages as read
-      if (data && data.length > 0) {
-        const unreadMessages = data.filter(msg => !msg.read);
-        if (unreadMessages.length > 0) {
-          console.log("Marking messages as read:", unreadMessages.length);
+      const unreadMessages = data?.filter(msg => !msg.read) || [];
+      if (unreadMessages.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ read: true })
+          .in('id', unreadMessages.map(msg => msg.id));
           
-          const { error: updateError } = await supabase
-            .from('messages')
-            .update({ read: true })
-            .in('id', unreadMessages.map(msg => msg.id));
-            
-          if (updateError) {
-            console.error("Error marking messages as read:", updateError);
-          } else {
-            // Invalidate the unreadMessages query to update the badge count
-            queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });
-          }
-        }
+        queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });
       }
       
-      return data;
+      return data || [];
     },
-    refetchInterval: 10000, // Refetch every 10 seconds to check for new messages
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   if (isLoading) {
