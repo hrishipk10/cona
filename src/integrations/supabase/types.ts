@@ -51,6 +51,7 @@ export type Database = {
           requirements_match: number | null
           skills: string[]
           status: string | null
+          theme: string | null
           updated_at: string | null
           user_id: string | null
           willingness_to_relocate: boolean | null
@@ -82,6 +83,7 @@ export type Database = {
           requirements_match?: number | null
           skills: string[]
           status?: string | null
+          theme?: string | null
           updated_at?: string | null
           user_id?: string | null
           willingness_to_relocate?: boolean | null
@@ -113,6 +115,7 @@ export type Database = {
           requirements_match?: number | null
           skills?: string[]
           status?: string | null
+          theme?: string | null
           updated_at?: string | null
           user_id?: string | null
           willingness_to_relocate?: boolean | null
