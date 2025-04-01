@@ -925,13 +925,13 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
           <div className="flex flex-wrap justify-between items-center mb-10 p-4 bg-white/50 rounded-lg shadow-sm">
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               {cv.email && (
-                <a href={`mailto:${cv.email}`} className="flex items-center hover:text-opacity-80 transition-colors" style={{ color: colors.primary }}>
+                <a href={`mailto:${cv.email}`} className="flex items-center hover:opacity-80 transition-colors" style={{ color: colors.primary }}>
                   <Mail className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
                   {cv.email}
                 </a>
               )}
               {cv.phone && (
-                <a href={`tel:${cv.phone}`} className="flex items-center hover:text-opacity-80 transition-colors" style={{ color: colors.primary }}>
+                <a href={`tel:${cv.phone}`} className="flex items-center hover:opacity-80 transition-colors" style={{ color: colors.primary }}>
                   <Phone className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
                   {cv.phone}
                 </a>
@@ -950,8 +950,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
                   href={cv.linkedin_profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:text-white transition-all shadow-sm"
-                  style={{ color: colors.primary, hover: { backgroundColor: colors.primary } }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-primary hover:text-white transition-all shadow-sm"
+                  style={{ color: colors.primary }}
                 >
                   <Linkedin className="w-4 h-4" />
                 </a>
@@ -961,8 +961,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
                   href={cv.github_profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:text-white transition-all shadow-sm"
-                  style={{ color: colors.primary, hover: { backgroundColor: colors.primary } }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-primary hover:text-white transition-all shadow-sm"
+                  style={{ color: colors.primary }}
                 >
                   <Github className="w-4 h-4" />
                 </a>
@@ -972,8 +972,8 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
                   href={cv.portfolio_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:text-white transition-all shadow-sm"
-                  style={{ color: colors.primary, hover: { backgroundColor: colors.primary } }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-primary hover:text-white transition-all shadow-sm"
+                  style={{ color: colors.primary }}
                 >
                   <Globe className="w-4 h-4" />
                 </a>
