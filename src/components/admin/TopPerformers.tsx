@@ -67,72 +67,72 @@ export const TopPerformers = ({ cvs }: TopPerformersProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        {showConfig && (
-          <div className="mb-4 p-3 border rounded-md bg-white/30 space-y-3">
-            <h4 className="font-medium text-sm">Scoring Configuration</h4>
-            <Separator className="my-2" />
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <Label htmlFor="skills-weight" className="text-xs">Skills Weight</Label>
-                <span className="text-xs font-medium">{scoringConfig.skillsWeight}</span>
+          {showConfig && (
+            <div className="mb-4 p-3 border rounded-md bg-white/30 space-y-3">
+              <h4 className="font-medium text-sm">Scoring Configuration</h4>
+              <Separator className="my-2" />
+              
+              <div>
+                <div className="flex justify-between mb-1">
+                  <Label htmlFor="skills-weight" className="text-xs">Skills Weight</Label>
+                  <span className="text-xs font-medium">{scoringConfig.skillsWeight}</span>
+                </div>
+                <Slider 
+                  id="skills-weight"
+                  min={0} 
+                  max={10} 
+                  step={1}
+                  value={[scoringConfig.skillsWeight]} 
+                  onValueChange={(value) => setScoringConfig(prev => ({ ...prev, skillsWeight: value[0] }))} 
+                />
               </div>
-              <Slider 
-                id="skills-weight"
-                min={0} 
-                max={10} 
-                step={1}
-                value={[scoringConfig.skillsWeight]} 
-                onValueChange={(value) => setScoringConfig(prev => ({ ...prev, skillsWeight: value[0] }))} 
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <Label htmlFor="exp-weight" className="text-xs">Experience Weight</Label>
-                <span className="text-xs font-medium">{scoringConfig.experienceWeight}</span>
+              
+              <div>
+                <div className="flex justify-between mb-1">
+                  <Label htmlFor="exp-weight" className="text-xs">Experience Weight</Label>
+                  <span className="text-xs font-medium">{scoringConfig.experienceWeight}</span>
+                </div>
+                <Slider 
+                  id="exp-weight"
+                  min={0} 
+                  max={10} 
+                  step={1}
+                  value={[scoringConfig.experienceWeight]} 
+                  onValueChange={(value) => setScoringConfig(prev => ({ ...prev, experienceWeight: value[0] }))} 
+                />
               </div>
-              <Slider 
-                id="exp-weight"
-                min={0} 
-                max={10} 
-                step={1}
-                value={[scoringConfig.experienceWeight]} 
-                onValueChange={(value) => setScoringConfig(prev => ({ ...prev, experienceWeight: value[0] }))} 
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <Label htmlFor="cert-bonus" className="text-xs">Certification Bonus</Label>
-                <span className="text-xs font-medium">{scoringConfig.certificationBonus}</span>
+              
+              <div>
+                <div className="flex justify-between mb-1">
+                  <Label htmlFor="cert-bonus" className="text-xs">Certification Bonus</Label>
+                  <span className="text-xs font-medium">{scoringConfig.certificationBonus}</span>
+                </div>
+                <Slider 
+                  id="cert-bonus"
+                  min={0} 
+                  max={50} 
+                  step={5}
+                  value={[scoringConfig.certificationBonus]} 
+                  onValueChange={(value) => setScoringConfig(prev => ({ ...prev, certificationBonus: value[0] }))} 
+                />
               </div>
-              <Slider 
-                id="cert-bonus"
-                min={0} 
-                max={50} 
-                step={5}
-                value={[scoringConfig.certificationBonus]} 
-                onValueChange={(value) => setScoringConfig(prev => ({ ...prev, certificationBonus: value[0] }))} 
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <Label htmlFor="ref-bonus" className="text-xs">References Bonus</Label>
-                <span className="text-xs font-medium">{scoringConfig.referencesBonus}</span>
+              
+              <div>
+                <div className="flex justify-between mb-1">
+                  <Label htmlFor="ref-bonus" className="text-xs">References Bonus</Label>
+                  <span className="text-xs font-medium">{scoringConfig.referencesBonus}</span>
+                </div>
+                <Slider 
+                  id="ref-bonus"
+                  min={0} 
+                  max={50} 
+                  step={5}
+                  value={[scoringConfig.referencesBonus]} 
+                  onValueChange={(value) => setScoringConfig(prev => ({ ...prev, referencesBonus: value[0] }))} 
+                />
               </div>
-              <Slider 
-                id="ref-bonus"
-                min={0} 
-                max={50} 
-                step={5}
-                value={[scoringConfig.referencesBonus]} 
-                onValueChange={(value) => setScoringConfig(prev => ({ ...prev, referencesBonus: value[0] }))} 
-              />
             </div>
-          </div>
-        )}
+          )}
         
         <div className="space-y-4">
           {topPerformers.map((cv, index) => (

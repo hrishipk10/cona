@@ -15,14 +15,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sidebar } from "@/components/admin/Sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  LogOut, Check, X, ChevronRight, Search, 
-  Filter, ArrowUpDown, Sliders, Code, Briefcase, Eye 
+  LogOut, ArrowUpDown, Search, Filter, Sliders, X, Code, Briefcase, Eye 
 } from "lucide-react";
+
+// Updated ScoringConfig with old code fields.
+interface ScoringConfig {
+  skillsWeight: number;
+  experienceWeight: number;
+  matchWeight: number;
+  certificationBonus: number;
+  referencesBonus: number;
+  languagesWeight: number;
+}
 
 type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "score";
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "pending" | "accepted" | "rejected";
 
+// Programming languages and job positions remain unchanged.
 const programmingLanguages = [
   "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Ruby", "Swift", 
   "Go", "Rust", "PHP", "Kotlin", "Dart", "R", "SQL", "HTML", "CSS", "Shell",
@@ -38,37 +48,40 @@ const jobPositions = [
   "Software Architect", "CTO", "IT Manager"
 ];
 
-interface ScoringConfig {
-  skillsWeight: number;
-  experienceWeight: number;
-  educationWeight: number;
-  matchWeight: number;
-}
-
 type CV = any;
 
 const SortingPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // -- Filtering state --
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortCriteria, setSortCriteria] = useState<SortCriteria>("score");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [minExperience, setMinExperience] = useState<number>(0);
   const [maxExperience, setMaxExperience] = useState<number>(30);
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [showScoringConfig, setShowScoringConfig] = useState<boolean>(false);
+
+  // -- Sorting state --
+  const [sortCriteria, setSortCriteria] = useState<SortCriteria>("score");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  // -- Languages and positions filters --
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
 
+  // -- Scoring configuration state using old defaults --
   const [scoringConfig, setScoringConfig] = useState<ScoringConfig>({
-    skillsWeight: 0.4,
-    experienceWeight: 0.3,
-    educationWeight: 0.2,
-    matchWeight: 0.1
+    skillsWeight: 2,
+    experienceWeight: 5,
+    matchWeight: 1,
+    certificationBonus: 15,
+    referencesBonus: 10,
+    languagesWeight: 1
   });
+  const [showScoringConfig, setShowScoringConfig] = useState<boolean>(false);
 
+  // Fetch CVs from supabase
   const { data: cvs, isLoading, error } = useQuery({
     queryKey: ["cvs"],
     queryFn: async () => {
@@ -81,11 +94,7 @@ const SortingPage = () => {
     },
   });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/admin/login");
-  };
-
+  // --- Helper functions for filters ---
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev =>
       prev.includes(skill)
@@ -124,89 +133,80 @@ const SortingPage = () => {
     });
   };
 
-  const updateScoringConfig = (config: Partial<ScoringConfig>) => {
-    setScoringConfig(prev => ({
-      ...prev,
-      ...config
-    }));
-    
+  // --- Scoring configuration panel actions ---
+  const resetScoringConfig = () => {
+    setScoringConfig({
+      skillsWeight: 2,
+      experienceWeight: 5,
+      matchWeight: 1,
+      certificationBonus: 15,
+      referencesBonus: 10,
+      languagesWeight: 1
+    });
     toast({
-      title: "Scoring updated",
-      description: "CV scoring weights have been updated."
+      title: "Scoring reset",
+      description: "Scoring configuration has been reset to default values."
     });
   };
 
+  const saveScoringConfig = () => {
+    toast({
+      title: "Scoring configuration saved",
+      description: "Your scoring preferences have been applied."
+    });
+    setShowScoringConfig(false);
+  };
+
+  // --- Filtering helpers ---
   const matchesSearchQuery = (cv: CV): boolean => {
     if (!searchQuery) return true;
-    
     const query = searchQuery.toLowerCase();
-    
     if (cv.applicant_name?.toLowerCase().includes(query)) return true;
-    
     if (cv.skills?.some((skill: string) => skill.toLowerCase().includes(query))) return true;
-    
     if (cv.current_job_title?.toLowerCase().includes(query)) return true;
-    
     return false;
   };
 
   const hasSelectedLanguages = (cv: CV): boolean => {
     if (selectedLanguages.length === 0) return true;
-    
-    const hasInSkills = cv.skills?.some((skill: string) => 
+    const hasInSkills = cv.skills?.some((skill: string) =>
       selectedLanguages.some(lang => skill.toLowerCase().includes(lang.toLowerCase()))
     );
-    
-    const hasInEducation = selectedLanguages.some(lang => 
+    const hasInEducation = selectedLanguages.some(lang =>
       cv.education?.toLowerCase().includes(lang.toLowerCase())
     );
-    
-    const hasInExperience = selectedLanguages.some(lang => 
+    const hasInExperience = selectedLanguages.some(lang =>
       cv.industry_experience?.toLowerCase().includes(lang.toLowerCase())
     );
-    
     return hasInSkills || hasInEducation || hasInExperience;
   };
 
   const hasSelectedPositions = (cv: CV): boolean => {
     if (selectedPositions.length === 0) return true;
-    
-    const hasInTitle = selectedPositions.some(position => 
+    const hasInTitle = selectedPositions.some(position =>
       cv.current_job_title?.toLowerCase().includes(position.toLowerCase())
     );
-    
-    const hasInExperience = selectedPositions.some(position => 
+    const hasInExperience = selectedPositions.some(position =>
       cv.industry_experience?.toLowerCase().includes(position.toLowerCase())
     );
-    
-    const hasInGoals = selectedPositions.some(position => 
+    const hasInGoals = selectedPositions.some(position =>
       cv.career_goals?.toLowerCase().includes(position.toLowerCase())
     );
-    
     return hasInTitle || hasInExperience || hasInGoals;
   };
 
+  // --- Scoring function using old code’s logic ---
   const scoreCVs = (cvList: CV[]) => {
     return cvList.map(cv => {
-      const skillScore = selectedSkills.length > 0
-        ? selectedSkills.filter(skill => 
-            cv.skills?.some((cvSkill: string) => 
-              cvSkill.toLowerCase().includes(skill.toLowerCase())
-            )
-          ).length / selectedSkills.length
-        : 0.5;
+      const skillsScore = (cv.skills?.length || 0) * scoringConfig.skillsWeight;
+      const experienceScore = cv.years_experience * scoringConfig.experienceWeight;
+      const matchScore = (cv.requirements_match || 0) * scoringConfig.matchWeight;
+      const certificationBonus = cv.certifications ? scoringConfig.certificationBonus : 0;
+      const referencesBonus = cv.references ? scoringConfig.referencesBonus : 0;
+      const languagesScore = (cv.languages_known?.length || 0) * scoringConfig.languagesWeight;
       
-      const experienceScore = Math.min(cv.years_experience / 10, 1);
-      
-      const educationScore = cv.education ? 0.8 : 0.2;
-      
-      const matchScore = cv.requirements_match ? cv.requirements_match / 100 : 0.5;
-      
-      const totalScore = 
-        skillScore * scoringConfig.skillsWeight +
-        experienceScore * scoringConfig.experienceWeight +
-        educationScore * scoringConfig.educationWeight +
-        matchScore * scoringConfig.matchWeight;
+      const totalScore = skillsScore + experienceScore + matchScore + 
+                         certificationBonus + referencesBonus + languagesScore;
       
       return {
         ...cv,
@@ -215,74 +215,57 @@ const SortingPage = () => {
     });
   };
 
+  // --- Filter and sort CVs ---
   const filteredAndSortedCVs = () => {
     if (!cvs) return [];
-    
-    return scoreCVs(
+    const scoredCVs = scoreCVs(
       cvs.filter(cv => {
-          if (statusFilter !== "all" && cv.status !== statusFilter) {
-            return false;
-          }
-          
-          if (!matchesSearchQuery(cv)) {
-            return false;
-          }
-          
-          if (cv.years_experience < minExperience || cv.years_experience > maxExperience) {
-            return false;
-          }
-          
-          if (selectedSkills.length > 0) {
-            const hasAllSelectedSkills = selectedSkills.every(skill =>
-              cv.skills?.some((cvSkill: string) => 
+        if (statusFilter !== "all" && cv.status !== statusFilter) return false;
+        if (!matchesSearchQuery(cv)) return false;
+        if (cv.years_experience < minExperience || cv.years_experience > maxExperience) return false;
+        if (selectedSkills.length > 0 && 
+            !selectedSkills.every(skill =>
+              cv.skills?.some((cvSkill: string) =>
                 cvSkill.toLowerCase().includes(skill.toLowerCase())
               )
-            );
-            
-            if (!hasAllSelectedSkills) {
-              return false;
-            }
-          }
+            )
+        ) return false;
+        if (!hasSelectedLanguages(cv)) return false;
+        if (!hasSelectedPositions(cv)) return false;
+        return true;
+      })
+    );
+    return scoredCVs.sort((a, b) => {
+      switch (sortCriteria) {
+        case "experience":
+          return sortOrder === "asc" 
+            ? a.years_experience - b.years_experience
+            : b.years_experience - a.years_experience;
+        case "name":
+          return sortOrder === "asc"
+            ? a.applicant_name.localeCompare(b.applicant_name)
+            : b.applicant_name.localeCompare(a.applicant_name);
+        case "date":
+          return sortOrder === "asc"
+            ? new Date(a.application_date).getTime() - new Date(b.application_date).getTime()
+            : new Date(b.application_date).getTime() - new Date(a.application_date).getTime();
+        case "rating":
+          return sortOrder === "asc"
+            ? (a.rating || 0) - (b.rating || 0)
+            : (b.rating || 0) - (a.rating || 0);
+        case "score":
+        default:
+          return sortOrder === "asc"
+            ? a._score - b._score
+            : b._score - a._score;
+      }
+    });
+  };
 
-          if (!hasSelectedLanguages(cv)) {
-            return false;
-          }
-
-          if (!hasSelectedPositions(cv)) {
-            return false;
-          }
-
-          return true;
-        })
-      ).sort((a, b) => {
-        switch (sortCriteria) {
-          case "experience":
-            return sortOrder === "asc" 
-              ? a.years_experience - b.years_experience
-              : b.years_experience - a.years_experience;
-          
-          case "name":
-            return sortOrder === "asc"
-              ? a.applicant_name.localeCompare(b.applicant_name)
-              : b.applicant_name.localeCompare(a.applicant_name);
-          
-          case "date":
-            return sortOrder === "asc"
-              ? new Date(a.application_date).getTime() - new Date(b.application_date).getTime()
-              : new Date(b.application_date).getTime() - new Date(a.application_date).getTime();
-          
-          case "rating":
-            return sortOrder === "asc"
-              ? (a.rating || 0) - (b.rating || 0)
-              : (b.rating || 0) - (a.rating || 0);
-          
-          case "score":
-          default:
-            return sortOrder === "asc"
-              ? a._score - b._score
-              : b._score - a._score;
-        }
-      });
+  // --- Logout ---
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/admin/login");
   };
 
   if (isLoading) {
@@ -312,7 +295,6 @@ const SortingPage = () => {
   return (
     <div className="bg-primary relative md:flex flex-col items-center justify-center p-8 min-h-screen">
       <Sidebar />
-
       <div className="ml-[88px] p-6 w-full">
         <div className="bg-secondary backdrop-blur rounded-xl p-6 mb-6">
           <div className="flex justify-between items-center">
@@ -362,8 +344,137 @@ const SortingPage = () => {
                   </Button>
                 </div>
               </div>
-              
-              <div className="flex flex-wrap gap-2 mt-4">
+
+              {/* -- Scoring Config Panel from old code -- */}
+              {showScoringConfig && (
+                <div className="border rounded-lg p-4 mt-4 space-y-4 bg-white/30">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">Scoring Configuration</h3>
+                    <Button variant="outline" size="sm" onClick={resetScoringConfig}>
+                      Reset to Default
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="skills-weight">Skills Weight</Label>
+                          <span className="text-sm font-medium">{scoringConfig.skillsWeight}</span>
+                        </div>
+                        <Slider 
+                          id="skills-weight"
+                          min={0} 
+                          max={10} 
+                          step={1}
+                          value={[scoringConfig.skillsWeight]} 
+                          onValueChange={(value) =>
+                            setScoringConfig(prev => ({ ...prev, skillsWeight: value[0] }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Points per skill</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="exp-weight">Experience Weight</Label>
+                          <span className="text-sm font-medium">{scoringConfig.experienceWeight}</span>
+                        </div>
+                        <Slider 
+                          id="exp-weight"
+                          min={0} 
+                          max={10} 
+                          step={1}
+                          value={[scoringConfig.experienceWeight]} 
+                          onValueChange={(value) =>
+                            setScoringConfig(prev => ({ ...prev, experienceWeight: value[0] }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Points per year of experience</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="match-weight">Requirements Match Weight</Label>
+                          <span className="text-sm font-medium">{scoringConfig.matchWeight}</span>
+                        </div>
+                        <Slider 
+                          id="match-weight"
+                          min={0} 
+                          max={5} 
+                          step={0.5}
+                          value={[scoringConfig.matchWeight]} 
+                          onValueChange={(value) =>
+                            setScoringConfig(prev => ({ ...prev, matchWeight: value[0] }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Multiplier for requirements match</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="cert-bonus">Certification Bonus</Label>
+                          <span className="text-sm font-medium">{scoringConfig.certificationBonus}</span>
+                        </div>
+                        <Slider 
+                          id="cert-bonus"
+                          min={0} 
+                          max={50} 
+                          step={5}
+                          value={[scoringConfig.certificationBonus]} 
+                          onValueChange={(value) =>
+                            setScoringConfig(prev => ({ ...prev, certificationBonus: value[0] }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Bonus points for certifications</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="ref-bonus">References Bonus</Label>
+                          <span className="text-sm font-medium">{scoringConfig.referencesBonus}</span>
+                        </div>
+                        <Slider 
+                          id="ref-bonus"
+                          min={0} 
+                          max={50} 
+                          step={5}
+                          value={[scoringConfig.referencesBonus]} 
+                          onValueChange={(value) =>
+                            setScoringConfig(prev => ({ ...prev, referencesBonus: value[0] }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Bonus points for references</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="lang-weight">Languages Weight</Label>
+                          <span className="text-sm font-medium">{scoringConfig.languagesWeight}</span>
+                        </div>
+                        <Slider 
+                          id="lang-weight"
+                          min={0} 
+                          max={5} 
+                          step={0.5}
+                          value={[scoringConfig.languagesWeight]} 
+                          onValueChange={(value) =>
+                            setScoringConfig(prev => ({ ...prev, languagesWeight: value[0] }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Points per language known</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={saveScoringConfig}>
+                      Apply Scoring Configuration
+                    </Button>
+                  </div>
+                </div>
+              )}
+<div className="flex flex-wrap gap-2 mt-4">
                 <div className="flex items-center gap-1">
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="text-sm">Sort by:</span>
@@ -414,19 +525,9 @@ const SortingPage = () => {
                     Date {sortCriteria === "date" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Button>
                   
-                  <Button
-                    variant={sortCriteria === "rating" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setSortCriteria("rating");
-                      setSortOrder(sortOrder === "desc" && sortCriteria === "rating" ? "asc" : "desc");
-                    }}
-                  >
-                    Rating {sortCriteria === "rating" && (sortOrder === "desc" ? "↓" : "↑")}
-                  </Button>
                 </div>
               </div>
-              
+              {/* -- Filters Panel (similar to current code) -- */}
               {showFilters && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-4 mt-4 bg-gray-50 rounded-lg">
                   <div>
@@ -572,7 +673,7 @@ const SortingPage = () => {
                   </div>
                 </div>
               )}
-              
+
               {(statusFilter !== "all" || searchQuery || selectedSkills.length > 0 || 
                 selectedLanguages.length > 0 || selectedPositions.length > 0 || 
                 minExperience > 0 || maxExperience < 30) && (
@@ -614,6 +715,7 @@ const SortingPage = () => {
           </Card>
         </div>
 
+        {/* Table of CVs */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <Table>
             <TableHeader>
@@ -671,7 +773,7 @@ const SortingPage = () => {
                     <TableCell>
                       <Badge 
                         variant={
-                          cv.status === "accepted" ? "success" : 
+                          cv.status === "accepted" ? "default" : 
                           cv.status === "rejected" ? "destructive" : 
                           "secondary"
                         }
@@ -681,7 +783,7 @@ const SortingPage = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-medium">
-                        {cv._score ? cv._score.toFixed(2) : "N/A"}
+                        {cv._score ? cv._score.toFixed(0) : "N/A"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
