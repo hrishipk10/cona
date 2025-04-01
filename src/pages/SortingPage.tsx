@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, SortAsc, FileText, Settings, Filter, Search, X, ArrowUpDown, Sliders } from "lucide-react";
+import { Home, SortAsc, FileText, Settings, Filter, Search, X, ArrowUpDown, Sliders, Code, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +22,23 @@ type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "score";
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "pending" | "accepted" | "rejected";
+
+// Define programming languages to filter by
+const programmingLanguages = [
+  "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Ruby", "Swift", 
+  "Go", "Rust", "PHP", "Kotlin", "Dart", "R", "SQL", "HTML", "CSS", "Shell",
+  "Scala", "Perl", "Haskell", "Lua"
+];
+
+// Define job positions to filter by
+const jobPositions = [
+  "UI Designer", "UX Designer", "Frontend Developer", "Backend Developer", 
+  "Full Stack Developer", "Project Manager", "Product Manager", "DevOps Engineer",
+  "Data Scientist", "Machine Learning Engineer", "QA Engineer", "Mobile Developer",
+  "System Administrator", "Database Administrator", "Game Developer", "Security Engineer",
+  "Technical Writer", "IT Support Specialist", "Cloud Engineer", "Technical Lead",
+  "Software Architect", "CTO", "IT Manager"
+];
 
 // Define scoring configuration interface
 interface ScoringConfig {
@@ -43,6 +60,8 @@ const SortingPage = () => {
   const [maxExperience, setMaxExperience] = useState<number>(30);
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [showScoringConfig, setShowScoringConfig] = useState<boolean>(false);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   
   // Default scoring config
   const [scoringConfig, setScoringConfig] = useState<ScoringConfig>({
@@ -83,10 +102,28 @@ const SortingPage = () => {
     );
   };
 
+  const toggleLanguage = (language: string) => {
+    setSelectedLanguages(prev =>
+      prev.includes(language)
+        ? prev.filter(l => l !== language)
+        : [...prev, language]
+    );
+  };
+
+  const togglePosition = (position: string) => {
+    setSelectedPositions(prev =>
+      prev.includes(position)
+        ? prev.filter(p => p !== position)
+        : [...prev, position]
+    );
+  };
+
   const clearFilters = () => {
     setStatusFilter("all");
     setSearchQuery("");
     setSelectedSkills([]);
+    setSelectedLanguages([]);
+    setSelectedPositions([]);
     setMinExperience(0);
     setMaxExperience(30);
     toast({
@@ -128,6 +165,50 @@ const SortingPage = () => {
       setSortCriteria(criteria);
       setSortOrder("desc");
     }
+  };
+
+  // Check if a CV contains any selected programming languages
+  const hasSelectedLanguages = (cv: CV): boolean => {
+    if (selectedLanguages.length === 0) return true;
+    
+    // Check programming languages in skills
+    const hasInSkills = cv.skills?.some(skill => 
+      selectedLanguages.some(lang => skill.toLowerCase().includes(lang.toLowerCase()))
+    );
+    
+    // Check programming languages in education or other text fields
+    const hasInEducation = selectedLanguages.some(lang => 
+      cv.education?.toLowerCase().includes(lang.toLowerCase())
+    );
+    
+    // Check programming languages in industry experience
+    const hasInExperience = selectedLanguages.some(lang => 
+      cv.industry_experience?.toLowerCase().includes(lang.toLowerCase())
+    );
+    
+    return hasInSkills || hasInEducation || hasInExperience;
+  };
+
+  // Check if a CV is related to selected job positions
+  const hasSelectedPositions = (cv: CV): boolean => {
+    if (selectedPositions.length === 0) return true;
+    
+    // Check position in current job title
+    const hasInTitle = selectedPositions.some(position => 
+      cv.current_job_title?.toLowerCase().includes(position.toLowerCase())
+    );
+    
+    // Check position in industry experience
+    const hasInExperience = selectedPositions.some(position => 
+      cv.industry_experience?.toLowerCase().includes(position.toLowerCase())
+    );
+    
+    // Check position in career goals
+    const hasInGoals = selectedPositions.some(position => 
+      cv.career_goals?.toLowerCase().includes(position.toLowerCase())
+    );
+    
+    return hasInTitle || hasInExperience || hasInGoals;
   };
 
   // Calculate scores for each CV using the configured weights
@@ -175,6 +256,16 @@ const SortingPage = () => {
 
           // Filter by experience range
           if (cv.years_experience < minExperience || cv.years_experience > maxExperience) {
+            return false;
+          }
+
+          // Filter by programming languages
+          if (!hasSelectedLanguages(cv)) {
+            return false;
+          }
+
+          // Filter by job positions
+          if (!hasSelectedPositions(cv)) {
             return false;
           }
 
@@ -504,11 +595,83 @@ const SortingPage = () => {
                     ))}
                   </div>
                 </div>
+                
+                {/* Programming Languages Filter */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Code className="h-4 w-4" />
+                    <h4 className="font-medium">Programming Languages</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedLanguages.map(language => (
+                      <Badge 
+                        key={language} 
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => toggleLanguage(language)}
+                      >
+                        {language}
+                        <X className="h-3 w-3 ml-1" />
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                    {programmingLanguages.map(language => (
+                      <div key={language} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`lang-${language}`}
+                          checked={selectedLanguages.includes(language)}
+                          onCheckedChange={() => toggleLanguage(language)}
+                        />
+                        <Label htmlFor={`lang-${language}`} className="truncate">
+                          {language}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Job Positions Filter */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Briefcase className="h-4 w-4" />
+                    <h4 className="font-medium">Job Positions</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedPositions.map(position => (
+                      <Badge 
+                        key={position} 
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => togglePosition(position)}
+                      >
+                        {position}
+                        <X className="h-3 w-3 ml-1" />
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                    {jobPositions.map(position => (
+                      <div key={position} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`pos-${position}`}
+                          checked={selectedPositions.includes(position)}
+                          onCheckedChange={() => togglePosition(position)}
+                        />
+                        <Label htmlFor={`pos-${position}`} className="truncate">
+                          {position}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Active filters display */}
-            {(statusFilter !== "all" || searchQuery || selectedSkills.length > 0 || minExperience > 0 || maxExperience < 30) && (
+            {(statusFilter !== "all" || searchQuery || selectedSkills.length > 0 || 
+              selectedLanguages.length > 0 || selectedPositions.length > 0 || 
+              minExperience > 0 || maxExperience < 30) && (
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="text-sm text-muted-foreground mt-1">Active filters:</span>
                 {statusFilter !== "all" && (
@@ -529,6 +692,16 @@ const SortingPage = () => {
                 {selectedSkills.length > 0 && (
                   <Badge variant="outline">
                     Skills: {selectedSkills.length} selected
+                  </Badge>
+                )}
+                {selectedLanguages.length > 0 && (
+                  <Badge variant="outline">
+                    Languages: {selectedLanguages.length} selected
+                  </Badge>
+                )}
+                {selectedPositions.length > 0 && (
+                  <Badge variant="outline">
+                    Positions: {selectedPositions.length} selected
                   </Badge>
                 )}
               </div>
