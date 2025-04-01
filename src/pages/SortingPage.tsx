@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +24,8 @@ const SortingPage = () => {
   const [employmentType, setEmploymentType] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"relevance" | "experience">("relevance");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
 
   const { data: cvs, isLoading, error } = useQuery({
     queryKey: ["cvs"],
@@ -53,6 +56,15 @@ const SortingPage = () => {
     navigate("/admin/login");
   };
 
+  const programmingLanguages = [
+    "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Ruby", "PHP", "Swift"
+  ];
+
+  const jobPositions = [
+    "Frontend Developer", "Backend Developer", "Full Stack Developer", "UI Designer", 
+    "UX Designer", "Product Manager", "Project Manager", "DevOps Engineer", "QA Engineer", "Data Scientist"
+  ];
+
   const filteredCvs = cvs
     ?.filter((cv) => {
       const term = searchTerm.toLowerCase();
@@ -68,8 +80,24 @@ const SortingPage = () => {
         cv.skills.some((cvSkill) => cvSkill.toLowerCase().includes(skill.toLowerCase()))
       );
     })
+    .filter((cv) => {
+      if (selectedLanguages.length === 0) return true;
+      return selectedLanguages.every((lang) =>
+        cv.skills.some((skill) => skill.toLowerCase().includes(lang.toLowerCase()))
+      );
+    })
+    .filter((cv) => {
+      if (selectedPositions.length === 0) return true;
+      return selectedPositions.some((position) =>
+        cv.current_job_title?.toLowerCase().includes(position.toLowerCase())
+      );
+    })
     .filter((cv) => cv.years_experience >= experienceRange[0] && cv.years_experience <= experienceRange[1])
-    .filter((cv) => cv.expected_salary >= salaryRange[0] && cv.expected_salary <= salaryRange[1])
+    .filter((cv) => {
+      if (!cv.expected_salary && !cv.desired_salary) return true;
+      const salary = parseFloat((cv.expected_salary || cv.desired_salary || "0").toString().replace(/[^0-9.]/g, ''));
+      return !isNaN(salary) && salary >= salaryRange[0] && salary <= salaryRange[1];
+    })
     .filter((cv) => {
       if (employmentType === "all") return true;
       return cv.employment_type === employmentType;
@@ -153,6 +181,54 @@ const SortingPage = () => {
                           }}
                         >
                           {skill}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold mb-2">Programming Languages</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {programmingLanguages.map((lang) => (
+                        <Button
+                          key={lang}
+                          variant="secondary"
+                          className={`text-xs rounded-full ${
+                            selectedLanguages.includes(lang) ? "bg-primary text-white" : ""
+                          }`}
+                          onClick={() => {
+                            if (selectedLanguages.includes(lang)) {
+                              setSelectedLanguages(selectedLanguages.filter((l) => l !== lang));
+                            } else {
+                              setSelectedLanguages([...selectedLanguages, lang]);
+                            }
+                          }}
+                        >
+                          {lang}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold mb-2">Job Positions</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {jobPositions.map((position) => (
+                        <Button
+                          key={position}
+                          variant="secondary"
+                          className={`text-xs rounded-full ${
+                            selectedPositions.includes(position) ? "bg-primary text-white" : ""
+                          }`}
+                          onClick={() => {
+                            if (selectedPositions.includes(position)) {
+                              setSelectedPositions(selectedPositions.filter((p) => p !== position));
+                            } else {
+                              setSelectedPositions([...selectedPositions, position]);
+                            }
+                          }}
+                        >
+                          {position}
                         </Button>
                       ))}
                     </div>
