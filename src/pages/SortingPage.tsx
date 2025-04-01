@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,26 +11,24 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  LogOut, Check, X, ChevronRight, ChevronDown, ChevronUp, Search, 
-  Filter, ArrowUpDown, Sliders, Code, Briefcase 
+  LogOut, Check, X, ChevronRight, Search, 
+  Filter, ArrowUpDown, Sliders, Code, Briefcase, Eye 
 } from "lucide-react";
 
-// Define types
 type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "score";
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "pending" | "accepted" | "rejected";
 
-// Define programming languages to filter by
 const programmingLanguages = [
   "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Ruby", "Swift", 
   "Go", "Rust", "PHP", "Kotlin", "Dart", "R", "SQL", "HTML", "CSS", "Shell",
   "Scala", "Perl", "Haskell", "Lua"
 ];
 
-// Define job positions to filter by
 const jobPositions = [
   "UI Designer", "UX Designer", "Frontend Developer", "Backend Developer", 
   "Full Stack Developer", "Project Manager", "Product Manager", "DevOps Engineer",
@@ -41,7 +38,6 @@ const jobPositions = [
   "Software Architect", "CTO", "IT Manager"
 ];
 
-// Define scoring configuration interface
 interface ScoringConfig {
   skillsWeight: number;
   experienceWeight: number;
@@ -49,8 +45,7 @@ interface ScoringConfig {
   matchWeight: number;
 }
 
-// Type for CV object from database
-type CV = any; // Simplified for this example
+type CV = any;
 
 const SortingPage = () => {
   const navigate = useNavigate();
@@ -67,7 +62,6 @@ const SortingPage = () => {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
 
-  // Default scoring config
   const [scoringConfig, setScoringConfig] = useState<ScoringConfig>({
     skillsWeight: 0.4,
     experienceWeight: 0.3,
@@ -142,39 +136,31 @@ const SortingPage = () => {
     });
   };
 
-  // Check if CV matches search query
   const matchesSearchQuery = (cv: CV): boolean => {
     if (!searchQuery) return true;
     
     const query = searchQuery.toLowerCase();
     
-    // Check name
     if (cv.applicant_name?.toLowerCase().includes(query)) return true;
     
-    // Check skills
     if (cv.skills?.some((skill: string) => skill.toLowerCase().includes(query))) return true;
     
-    // Check job title
     if (cv.current_job_title?.toLowerCase().includes(query)) return true;
     
     return false;
   };
 
-  // Check if a CV contains any selected programming languages
   const hasSelectedLanguages = (cv: CV): boolean => {
     if (selectedLanguages.length === 0) return true;
     
-    // Check programming languages in skills
     const hasInSkills = cv.skills?.some((skill: string) => 
       selectedLanguages.some(lang => skill.toLowerCase().includes(lang.toLowerCase()))
     );
     
-    // Check programming languages in education or other text fields
     const hasInEducation = selectedLanguages.some(lang => 
       cv.education?.toLowerCase().includes(lang.toLowerCase())
     );
     
-    // Check programming languages in industry experience
     const hasInExperience = selectedLanguages.some(lang => 
       cv.industry_experience?.toLowerCase().includes(lang.toLowerCase())
     );
@@ -182,21 +168,17 @@ const SortingPage = () => {
     return hasInSkills || hasInEducation || hasInExperience;
   };
 
-  // Check if a CV is related to selected job positions
   const hasSelectedPositions = (cv: CV): boolean => {
     if (selectedPositions.length === 0) return true;
     
-    // Check position in current job title
     const hasInTitle = selectedPositions.some(position => 
       cv.current_job_title?.toLowerCase().includes(position.toLowerCase())
     );
     
-    // Check position in industry experience
     const hasInExperience = selectedPositions.some(position => 
       cv.industry_experience?.toLowerCase().includes(position.toLowerCase())
     );
     
-    // Check position in career goals
     const hasInGoals = selectedPositions.some(position => 
       cv.career_goals?.toLowerCase().includes(position.toLowerCase())
     );
@@ -204,28 +186,22 @@ const SortingPage = () => {
     return hasInTitle || hasInExperience || hasInGoals;
   };
 
-  // Calculate scores for each CV using the configured weights
   const scoreCVs = (cvList: CV[]) => {
     return cvList.map(cv => {
-      // Calculate skill score based on matching skills
       const skillScore = selectedSkills.length > 0
         ? selectedSkills.filter(skill => 
             cv.skills?.some((cvSkill: string) => 
               cvSkill.toLowerCase().includes(skill.toLowerCase())
             )
           ).length / selectedSkills.length
-        : 0.5; // Neutral score if no skills selected
+        : 0.5;
       
-      // Calculate experience score (normalized to 0-1)
       const experienceScore = Math.min(cv.years_experience / 10, 1);
       
-      // Calculate education score (simplified)
       const educationScore = cv.education ? 0.8 : 0.2;
       
-      // Calculate requirements match score
       const matchScore = cv.requirements_match ? cv.requirements_match / 100 : 0.5;
       
-      // Calculate weighted score
       const totalScore = 
         skillScore * scoringConfig.skillsWeight +
         experienceScore * scoringConfig.experienceWeight +
@@ -239,29 +215,23 @@ const SortingPage = () => {
     });
   };
 
-  // Filter and sort CVs
   const filteredAndSortedCVs = () => {
     if (!cvs) return [];
     
-    // First filter the CVs
     return scoreCVs(
       cvs.filter(cv => {
-          // Filter by status
           if (statusFilter !== "all" && cv.status !== statusFilter) {
             return false;
           }
           
-          // Filter by search query
           if (!matchesSearchQuery(cv)) {
             return false;
           }
           
-          // Filter by experience
           if (cv.years_experience < minExperience || cv.years_experience > maxExperience) {
             return false;
           }
           
-          // Filter by selected skills
           if (selectedSkills.length > 0) {
             const hasAllSelectedSkills = selectedSkills.every(skill =>
               cv.skills?.some((cvSkill: string) => 
@@ -274,12 +244,10 @@ const SortingPage = () => {
             }
           }
 
-          // Filter by programming languages
           if (!hasSelectedLanguages(cv)) {
             return false;
           }
 
-          // Filter by job positions
           if (!hasSelectedPositions(cv)) {
             return false;
           }
@@ -287,7 +255,6 @@ const SortingPage = () => {
           return true;
         })
       ).sort((a, b) => {
-        // Sort by the selected criteria
         switch (sortCriteria) {
           case "experience":
             return sortOrder === "asc" 
@@ -358,7 +325,6 @@ const SortingPage = () => {
 
           <Card className="mt-4 bg-white">
             <CardContent className="p-4">
-              {/* Search and filter controls */}
               <div className="flex flex-col md:flex-row gap-4 items-start">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -397,7 +363,6 @@ const SortingPage = () => {
                 </div>
               </div>
               
-              {/* Sort controls */}
               <div className="flex flex-wrap gap-2 mt-4">
                 <div className="flex items-center gap-1">
                   <ArrowUpDown className="h-4 w-4" />
@@ -462,10 +427,8 @@ const SortingPage = () => {
                 </div>
               </div>
               
-              {/* Filter options */}
               {showFilters && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-4 mt-4 bg-gray-50 rounded-lg">
-                  {/* Status filter */}
                   <div>
                     <h4 className="font-medium mb-2">Application Status</h4>
                     <div className="flex flex-col gap-2">
@@ -492,7 +455,6 @@ const SortingPage = () => {
                     </div>
                   </div>
                   
-                  {/* Experience filter */}
                   <div>
                     <h4 className="font-medium mb-2">Experience Range</h4>
                     <div className="px-2">
@@ -512,7 +474,6 @@ const SortingPage = () => {
                     </div>
                   </div>
                   
-                  {/* Skills filter */}
                   <div>
                     <h4 className="font-medium mb-2">Skills</h4>
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -542,7 +503,6 @@ const SortingPage = () => {
                     </div>
                   </div>
                   
-                  {/* Programming Languages Filter */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Code className="h-4 w-4" />
@@ -577,7 +537,6 @@ const SortingPage = () => {
                     </div>
                   </div>
                   
-                  {/* Job Positions Filter */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Briefcase className="h-4 w-4" />
@@ -614,7 +573,6 @@ const SortingPage = () => {
                 </div>
               )}
               
-              {/* Active filters display */}
               {(statusFilter !== "all" || searchQuery || selectedSkills.length > 0 || 
                 selectedLanguages.length > 0 || selectedPositions.length > 0 || 
                 minExperience > 0 || maxExperience < 30) && (
@@ -656,27 +614,49 @@ const SortingPage = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCVList.map(cv => (
-            <Card key={cv.id} className="bg-white shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <Avatar className="h-10 w-10 mt-1">
-                      {cv.avatar_url ? (
-                        <AvatarImage src={cv.avatar_url} alt={cv.applicant_name} />
-                      ) : (
-                        <AvatarFallback>{cv.applicant_name.charAt(0)}</AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <h3 className="font-bold text-lg">{cv.applicant_name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {cv.current_job_title || "Applicant"} • {cv.years_experience} years
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {cv.skills.slice(0, 3).map((skill: string) => (
-                          <Badge key={skill} variant="secondary" className="text-xs">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Applicant</TableHead>
+                <TableHead>Experience</TableHead>
+                <TableHead>Skills</TableHead>
+                <TableHead>Job Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCVList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No CVs match your current filters
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredCVList.map(cv => (
+                  <TableRow key={cv.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-8 w-8">
+                          {cv.avatar_url ? (
+                            <AvatarImage src={cv.avatar_url} alt={cv.applicant_name} />
+                          ) : (
+                            <AvatarFallback>{cv.applicant_name.charAt(0)}</AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{cv.applicant_name}</p>
+                          {cv.email && <p className="text-xs text-muted-foreground">{cv.email}</p>}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{cv.years_experience} years</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {cv.skills.slice(0, 3).map((skill, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
                             {skill}
                           </Badge>
                         ))}
@@ -686,15 +666,40 @@ const SortingPage = () => {
                           </Badge>
                         )}
                       </div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/admin/cv/${cv.id}`)}>
-                    View CV <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    </TableCell>
+                    <TableCell>{cv.current_job_title || "N/A"}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          cv.status === "accepted" ? "success" : 
+                          cv.status === "rejected" ? "destructive" : 
+                          "secondary"
+                        }
+                      >
+                        {cv.status ? cv.status.charAt(0).toUpperCase() + cv.status.slice(1) : "Pending"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-medium">
+                        {cv._score ? cv._score.toFixed(2) : "N/A"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => navigate(`/admin/cv/${cv.id}`)}
+                        className="space-x-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>View</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
