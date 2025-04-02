@@ -149,7 +149,7 @@ const SettingsPage = () => {
                   className="w-full"
                   disabled={updateSettings.isPending}
                 >
-                  {updateSettings.isPending ? <Spinner className="mr-2" /> : null}
+                  {updateSettings.isPending ? <Spinner /> : null}
                   Save Settings
                 </Button>
               </form>
