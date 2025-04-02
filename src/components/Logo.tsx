@@ -2,10 +2,16 @@ import React from "react";
 
 const Logo = () => {
   return (
-    <div className="flex flex-col items-center">
-      <h1 className="text-4xl font-bold text-primary">Cona</h1>
-      <p className="text-sm text-muted-foreground">CV MANAGEMENT SYSTEM</p>
-    </div>
+    <><div>
+      <div className="flex flex-col items-center">
+      <h1 className="text-6xl font-bold bg-gradient-to-r from-[#FBF5DD] to-[#AAA591] bg-clip-text text-transparent">
+              Cona
+            </h1>
+            <p className="text-xl font-medium text-secondary tracking-wider">
+              CV Management System
+            </p>
+      </div>
+    </div></>
   );
 };
 

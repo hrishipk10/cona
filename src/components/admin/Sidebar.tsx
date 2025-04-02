@@ -44,14 +44,6 @@ export const Sidebar = () => {
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={`${isActive('/admin/settings') ? 'bg-gray-700' : ''} text-white`}
-          onClick={() => navigate("/admin/settings")}
-        >
-          <Settings className="h-6 w-6" />
-        </Button>
       </nav>
     </div>
   );
