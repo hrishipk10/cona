@@ -230,19 +230,31 @@ export type Database = {
         Row: {
           company_name: string
           created_at: string | null
+          default_sort_criteria: string | null
+          default_sort_order: string | null
           id: string
+          recruiter_avatar_url: string | null
+          recruiter_name: string | null
           updated_at: string | null
         }
         Insert: {
           company_name?: string
           created_at?: string | null
+          default_sort_criteria?: string | null
+          default_sort_order?: string | null
           id?: string
+          recruiter_avatar_url?: string | null
+          recruiter_name?: string | null
           updated_at?: string | null
         }
         Update: {
           company_name?: string
           created_at?: string | null
+          default_sort_criteria?: string | null
+          default_sort_order?: string | null
           id?: string
+          recruiter_avatar_url?: string | null
+          recruiter_name?: string | null
           updated_at?: string | null
         }
         Relationships: []
