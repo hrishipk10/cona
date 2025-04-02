@@ -18,6 +18,8 @@ const Messages = () => {
       if (userError) throw userError;
       if (!user) throw new Error("No user found");
 
+      console.log("Fetching messages for user:", user.id);
+
       // Find the CV associated with this user
       const { data: cv, error: cvError } = await supabase
         .from("cvs")
@@ -26,7 +28,12 @@ const Messages = () => {
         .maybeSingle();
       
       if (cvError) throw cvError;
-      if (!cv) return [];
+      if (!cv) {
+        console.log("No CV found for user");
+        return [];
+      }
+
+      console.log("Found CV with ID:", cv.id);
 
       // Get all messages for this CV
       const { data, error: messagesError } = await supabase
@@ -36,6 +43,7 @@ const Messages = () => {
         .order('created_at', { ascending: false });
       
       if (messagesError) throw messagesError;
+      console.log("Retrieved messages:", data);
       
       // Mark all unread messages as read
       const unreadMessages = data?.filter(msg => !msg.read) || [];

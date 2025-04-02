@@ -58,21 +58,26 @@ const InterviewTab = () => {
     if (userError) throw userError;
     if (!user) throw new Error("No user found");
 
+    // Find the CV associated with this user
     const { data: cv, error: cvError } = await supabase
       .from("cvs")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
+    
     if (cvError) throw cvError;
     if (!cv) return [];
 
+    // Get all interviews for this CV
     const { data: interviews, error: interviewsError } = await supabase
       .from("interviews")
       .select("*")
       .eq("cv_id", cv.id)
       .order("scheduled_at", { ascending: true });
+    
     if (interviewsError) throw interviewsError;
-
+    
+    console.log("Retrieved interviews:", interviews);
     return interviews || [];
   };
 

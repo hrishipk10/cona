@@ -29,8 +29,8 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
       <CardContent>
         <div className="space-y-4">
           {upcomingInterviews.length > 0 ? (
-            upcomingInterviews.map((interview, index) => (
-              <div key={index} className="flex items-center">
+            upcomingInterviews.map((interview) => (
+              <div key={interview.id} className="flex items-center">
                 <div className="bg-black text-white rounded-full p-2 mr-4">
                   <Calendar className="h-5 w-5" />
                 </div>
