@@ -29,6 +29,24 @@ const MessagesInterviewsPage = () => {
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
+  // Add a query to fetch company settings
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("*")
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching settings:", error);
+        throw error;
+      }
+      
+      return data || { company_name: "Cona" }; // Default if no settings found
+    },
+  });
+
   const { data: cvs, isLoading: cvsLoading } = useQuery({
     queryKey: ["cvs"],
     queryFn: async () => {
@@ -152,9 +170,23 @@ const MessagesInterviewsPage = () => {
         }
       }
 
+      // Get the CV to use the applicant name in the message
+      const { data: cv, error: cvError } = await supabase
+        .from("cvs")
+        .select("applicant_name")
+        .eq("id", data.cv_id)
+        .single();
+
+      if (cvError) {
+        console.error("Error fetching CV:", cvError);
+        throw cvError;
+      }
+
+      const companyName = settings?.company_name || "Cona";
+      
       // Send a notification message about the interview to the applicant
       const interview = existingInterview ? "rescheduled" : "scheduled";
-      const interviewMessage = `Your interview has been ${interview} for ${format(data.date, "EEEE, MMMM do, yyyy 'at' h:mm a")}. Please make sure you're available at this time.`;
+      const interviewMessage = `Hello ${cv.applicant_name}, your interview with ${companyName} has been ${interview} for ${format(data.date, "EEEE, MMMM do, yyyy 'at' h:mm a")}. Please make sure you're available at this time.`;
       
       const { error: messageError } = await supabase
         .from("messages")
