@@ -118,6 +118,23 @@ const InterviewTab = () => {
     return interviewDate >= new Date();
   });
 
+  // Create an array of dates where interviews are scheduled
+  const interviewDates = interviews?.map(interview => {
+    const date = new Date(interview.scheduled_at);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }) || [];
+
+  // Create a unique set of dates (to avoid duplicates)
+  const uniqueInterviewDates = [...new Set(interviewDates.map(date => date.toDateString()))]
+    .map(dateString => new Date(dateString));
+
+  // Function to style the dates with interviews
+  const isDayWithInterview = (date: Date) => {
+    return uniqueInterviewDates.some(interviewDate => 
+      interviewDate.toDateString() === date.toDateString()
+    );
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-background">
@@ -139,7 +156,17 @@ const InterviewTab = () => {
                   // Disable past dates
                   return date < new Date(new Date().setHours(0, 0, 0, 0));
                 }}
+                modifiers={{
+                  interview: (date) => isDayWithInterview(date),
+                }}
+                modifiersClassNames={{
+                  interview: "bg-primary/20 font-bold text-primary rounded-md",
+                }}
               />
+              <div className="mt-2 flex items-center justify-center text-sm">
+                <div className="w-3 h-3 bg-primary/20 rounded-full mr-2"></div>
+                <span className="text-muted-foreground">Scheduled Interviews</span>
+              </div>
             </div>
             <div className="md:w-2/3 mt-6 md:mt-0 space-y-4">
               {interviewsByDate && interviewsByDate.length > 0 ? (
