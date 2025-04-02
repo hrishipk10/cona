@@ -49,26 +49,6 @@ export const Sidebar = () => {
           ))}
         </TooltipProvider>
       </nav>
-
-      <div className="mt-auto mb-8">
-        <TooltipProvider>
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-gray-800 transition-colors" 
-                onClick={() => navigate("/admin/profile")}
-              >
-                <User className="h-6 w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Profile</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
     </div>
   );
 };
