@@ -1,7 +1,8 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, SortAsc, MessageSquare, Settings } from "lucide-react";
+import { Home, SortAsc, MessageSquare, Settings, User } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const Sidebar = () => {
   const navigate = useNavigate();
@@ -14,37 +15,60 @@ export const Sidebar = () => {
     return location.pathname.startsWith(path);
   };
 
+  const navItems = [
+    { path: "/admin/dashboard", icon: Home, label: "Dashboard" },
+    { path: "/admin/sorting", icon: SortAsc, label: "CV Sorting" },
+    { path: "/admin/messages", icon: MessageSquare, label: "Messages" },
+    { path: "/admin/settings", icon: Settings, label: "Settings" },
+  ];
+
   return (
     <div className="fixed left-0 top-0 h-full w-[88px] bg-black flex flex-col items-center py-8 text-white">
       <div className="mb-12">
-        <span className="text-xl font-bold">Cona</span>
+        <span className="text-xl font-bold font-['Karla']">Cona</span>
       </div>
+      
       <nav className="flex flex-col items-center space-y-8">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={`${isActive('/admin/dashboard') ? 'bg-gray-700' : ''} text-white`} 
-          onClick={() => navigate("/admin/dashboard")}
-        >
-          <Home className="h-6 w-6" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={`${isActive('/admin/sorting') ? 'bg-gray-700' : ''} text-white`} 
-          onClick={() => navigate("/admin/sorting")}
-        >
-          <SortAsc className="h-6 w-6" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={`${isActive('/admin/messages') ? 'bg-gray-700' : ''} text-white`} 
-          onClick={() => navigate("/admin/messages")}
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
+        <TooltipProvider>
+          {navItems.map((item) => (
+            <Tooltip key={item.path} delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={`${isActive(item.path) ? 'bg-gray-700' : ''} text-white hover:bg-gray-800 transition-colors`} 
+                  onClick={() => navigate(item.path)}
+                >
+                  <item.icon className="h-6 w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{item.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </TooltipProvider>
       </nav>
+
+      <div className="mt-auto mb-8">
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-gray-800 transition-colors" 
+                onClick={() => navigate("/admin/profile")}
+              >
+                <User className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Profile</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </div>
   );
 };
