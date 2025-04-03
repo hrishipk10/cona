@@ -33,6 +33,18 @@ interface SettingsFormValues {
   default_sort_order: SortOrder;
 }
 
+// Define a more complete settings interface based on our database fields
+interface Settings {
+  id: string;
+  company_name: string;
+  created_at: string | null;
+  updated_at: string | null;
+  recruiter_name: string | null;
+  recruiter_avatar_url: string | null;
+  default_sort_criteria: string | null;
+  default_sort_order: string | null;
+}
+
 const SettingsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -62,7 +74,7 @@ const SettingsPage = () => {
         throw error;
       }
 
-      return data;
+      return data as Settings;
     },
   });
 
@@ -71,8 +83,8 @@ const SettingsPage = () => {
       form.reset({
         company_name: settings.company_name,
         recruiter_name: settings.recruiter_name || "",
-        default_sort_criteria: settings.default_sort_criteria || "score",
-        default_sort_order: settings.default_sort_order || "desc",
+        default_sort_criteria: (settings.default_sort_criteria as SortCriteria) || "score",
+        default_sort_order: (settings.default_sort_order as SortOrder) || "desc",
       });
       setAvatarUrl(settings.recruiter_avatar_url || null);
     }
