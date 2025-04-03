@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
-import { LogOut, ChevronRight } from "lucide-react";
+import { LogOut, ChevronRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -17,17 +17,41 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Sidebar } from "@/components/admin/Sidebar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
+
+// Generate time slots from 9:00 AM to 6:00 PM in 30-minute intervals
+const generateTimeSlots = () => {
+  const timeSlots = [];
+  for (let hour = 9; hour <= 18; hour++) {
+    for (let minute of [0, 30]) {
+      // Skip 6:30 PM
+      if (hour === 18 && minute === 30) continue;
+      
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour > 12 ? hour - 12 : hour;
+      const formattedHour = displayHour === 0 ? 12 : displayHour;
+      const formattedMinute = minute === 0 ? '00' : minute;
+      const timeString = `${formattedHour}:${formattedMinute} ${period}`;
+      timeSlots.push(timeString);
+    }
+  }
+  return timeSlots;
+};
 
 const MessagesInterviewsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  
+  // Generate time slots
+  const timeSlots = generateTimeSlots();
 
   // Add a query to fetch company settings
   const { data: settings } = useQuery({
@@ -115,7 +139,7 @@ const MessagesInterviewsPage = () => {
   });
 
   const { mutate: updateInterviewDate, isPending: isUpdatingInterview } = useMutation({
-    mutationFn: async (data: { cv_id: string; date: Date }) => {
+    mutationFn: async (data: { cv_id: string; date: Date; time: string }) => {
       // Get the current user's ID to set as recruiter_id
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
@@ -135,12 +159,28 @@ const MessagesInterviewsPage = () => {
 
       console.log("Existing interview check result:", existingInterview);
 
+      // Combine date and time
+      const [hours, minutes] = data.time.split(':')[0].split(' ')[0].split(':');
+      const period = data.time.split(' ')[1];
+      
+      let hour = parseInt(hours);
+      if (period === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (period === 'AM' && hour === 12) {
+        hour = 0;
+      }
+      
+      const scheduledDate = new Date(data.date);
+      scheduledDate.setHours(hour, parseInt(minutes), 0, 0);
+      
+      console.log("Scheduled date with time:", scheduledDate);
+
       if (existingInterview) {
         console.log("Updating existing interview:", existingInterview.id);
         const { error } = await supabase
           .from("interviews")
           .update({
-            scheduled_at: data.date.toISOString(),
+            scheduled_at: scheduledDate.toISOString(),
             updated_at: new Date().toISOString(),
             recruiter_id: user.id,
           })
@@ -158,7 +198,7 @@ const MessagesInterviewsPage = () => {
           .insert([
             {
               cv_id: data.cv_id,
-              scheduled_at: data.date.toISOString(),
+              scheduled_at: scheduledDate.toISOString(),
               status: "scheduled",
               recruiter_id: user.id,
             },
@@ -186,7 +226,7 @@ const MessagesInterviewsPage = () => {
       
       // Send a notification message about the interview to the applicant
       const interview = existingInterview ? "rescheduled" : "scheduled";
-      const interviewMessage = `Hello ${cv.applicant_name}, your interview with ${companyName} has been ${interview} for ${format(data.date, "EEEE, MMMM do, yyyy 'at' h:mm a")}. Please make sure you're available at this time.`;
+      const interviewMessage = `Hello ${cv.applicant_name}, your interview with ${companyName} has been ${interview} for ${format(scheduledDate, "EEEE, MMMM do, yyyy")} at ${data.time}. Please make sure you're available at this time.`;
       
       const { error: messageError } = await supabase
         .from("messages")
@@ -211,6 +251,7 @@ const MessagesInterviewsPage = () => {
         description: "The interview has been scheduled successfully",
       });
       setSelectedDate(undefined);
+      setSelectedTime("");
       setSelectedCvId(null);
       queryClient.invalidateQueries({ queryKey: ["interviews"] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
@@ -245,10 +286,11 @@ const MessagesInterviewsPage = () => {
   };
 
   const handleUpdateInterviewDate = () => {
-    if (selectedCvId && selectedDate) {
+    if (selectedCvId && selectedDate && selectedTime) {
       updateInterviewDate({
         cv_id: selectedCvId,
         date: selectedDate,
+        time: selectedTime,
       });
     }
   };
@@ -342,20 +384,53 @@ const MessagesInterviewsPage = () => {
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0" align="end">
                                 <div className="p-4">
-                                  <Calendar
-                                    mode="single"
-                                    selected={selectedDate}
-                                    onSelect={(date) => {
-                                      setSelectedDate(date);
-                                      setSelectedCvId(cv.id);
-                                    }}
-                                    initialFocus
-                                  />
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2">
+                                      Select Date
+                                    </label>
+                                    <Calendar
+                                      mode="single"
+                                      selected={selectedDate}
+                                      onSelect={(date) => {
+                                        setSelectedDate(date);
+                                        setSelectedCvId(cv.id);
+                                      }}
+                                      disabled={(date) =>
+                                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                                      }
+                                      initialFocus
+                                      className="pointer-events-auto"
+                                    />
+                                  </div>
+                                  
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2">
+                                      Select Time
+                                    </label>
+                                    <Select 
+                                      value={selectedTime} 
+                                      onValueChange={setSelectedTime}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a time">
+                                          {selectedTime || <div className="flex items-center"><Clock className="mr-2 h-4 w-4" /> Select time</div>}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {timeSlots.map((time) => (
+                                          <SelectItem key={time} value={time}>
+                                            {time}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
                                   <div className="flex justify-end mt-4">
                                     <Button 
                                       size="sm" 
                                       onClick={handleUpdateInterviewDate}
-                                      disabled={!selectedDate || selectedCvId !== cv.id || isUpdatingInterview}
+                                      disabled={!selectedDate || !selectedTime || selectedCvId !== cv.id || isUpdatingInterview}
                                     >
                                       {interview ? 'Update Interview' : 'Schedule Interview'}
                                     </Button>
