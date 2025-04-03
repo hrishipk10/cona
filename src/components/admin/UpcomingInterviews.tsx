@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Calendar } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
 
@@ -37,7 +38,9 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
                 <div className="flex-1">
                   <p className="font-medium">{interview.cvs?.applicant_name || "Candidate"}</p>
                   <div className="flex items-center text-sm text-gray-500">
-                    {new Date(interview.scheduled_at).toLocaleDateString()} at {new Date(interview.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    <span className="font-medium">{format(new Date(interview.scheduled_at), "MMMM d, yyyy")}</span>
+                    <span className="mx-1">at</span>
+                    <span className="font-medium">{format(new Date(interview.scheduled_at), "h:mm a")}</span>
                   </div>
                 </div>
                 <Button

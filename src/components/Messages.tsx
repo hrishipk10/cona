@@ -1,9 +1,10 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
 
 const Messages = () => {
@@ -66,6 +67,41 @@ const Messages = () => {
     );
   }
 
+  // Helper function to format message content, highlighting interview details
+  const formatMessageContent = (message: string) => {
+    if (message.includes("interview") && message.includes("at")) {
+      // Check if the message contains date and time information about an interview
+      return (
+        <div>
+          {message.split("at").map((part, index) => {
+            if (index === 0) {
+              return <span key={index}>{part}at</span>;
+            } else {
+              // Attempt to identify the time part (e.g., "2:30 PM")
+              const timeMatch = part.match(/\d{1,2}:\d{2}\s[APap][Mm]/);
+              if (timeMatch) {
+                const timeIndex = part.indexOf(timeMatch[0]);
+                const beforeTime = part.substring(0, timeIndex);
+                const time = timeMatch[0];
+                const afterTime = part.substring(timeIndex + time.length);
+                
+                return (
+                  <span key={index}>
+                    {beforeTime}
+                    <span className="font-bold text-primary">{time}</span>
+                    {afterTime}
+                  </span>
+                );
+              }
+              return <span key={index}>{part}</span>;
+            }
+          })}
+        </div>
+      );
+    }
+    return message;
+  };
+
   return (
     <Card className="border shadow-sm">
       <CardContent className="p-0">
@@ -104,7 +140,7 @@ const Messages = () => {
                         mt-2
                         ${message.read ? 'text-foreground' : 'font-medium'}
                       `}>
-                        {message.message}
+                        {formatMessageContent(message.message)}
                       </p>
                     </div>
                   </div>
