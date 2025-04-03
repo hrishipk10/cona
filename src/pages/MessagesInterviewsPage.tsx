@@ -50,10 +50,8 @@ const MessagesInterviewsPage = () => {
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   
-  // Generate time slots
   const timeSlots = generateTimeSlots();
 
-  // Add a query to fetch company settings
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => {
