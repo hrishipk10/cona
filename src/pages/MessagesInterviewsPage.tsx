@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { LogOut, ChevronRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parse, setHours, setMinutes } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -159,19 +159,30 @@ const MessagesInterviewsPage = () => {
 
       console.log("Existing interview check result:", existingInterview);
 
-      // Combine date and time
-      const [hours, minutes] = data.time.split(':')[0].split(' ')[0].split(':');
-      const period = data.time.split(' ')[1];
+      // Parse the time string correctly
+      // Example format: "2:30 PM"
+      const timeRegex = /^(\d{1,2}):(\d{2})\s(AM|PM)$/;
+      const match = data.time.match(timeRegex);
       
-      let hour = parseInt(hours);
-      if (period === 'PM' && hour !== 12) {
-        hour += 12;
-      } else if (period === 'AM' && hour === 12) {
-        hour = 0;
+      if (!match) {
+        throw new Error("Invalid time format");
       }
       
+      let hours = parseInt(match[1]);
+      const minutes = parseInt(match[2]);
+      const period = match[3];
+      
+      // Convert hours to 24-hour format
+      if (period === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      
+      // Create a new date object from the selected date
       const scheduledDate = new Date(data.date);
-      scheduledDate.setHours(hour, parseInt(minutes), 0, 0);
+      // Set the hours and minutes
+      scheduledDate.setHours(hours, minutes, 0, 0);
       
       console.log("Scheduled date with time:", scheduledDate);
 
