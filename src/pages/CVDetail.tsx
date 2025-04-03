@@ -117,7 +117,7 @@ const CVDetail = () => {
     if (!cv) return "overall experience";
     
     if (cv.years_experience < 2) return "work experience";
-    if (!cv.languages_known || cv.languages_known.length < 2) return "language proficiency";
+    if (!cv.languages_known || cv.languages_known.length < 3) return "language proficiency";
     if (!cv.education) return "educational background";
     if (!cv.certifications) return "professional certifications";
     if (cv.skills.length < 3) return "technical skills";
