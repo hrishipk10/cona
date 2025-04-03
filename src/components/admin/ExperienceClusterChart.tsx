@@ -84,8 +84,8 @@ export const ExperienceClusterChart = ({ experienceGroups }: ExperienceClusterCh
   }, [experienceGroups, totalCandidates]);
 
   return (
-    <Card className="flex flex-col w-full max-w-md bg-secondary backdrop-blur">
-      <CardHeader className="items-center pb-0">
+    <Card className="bg-secondary backdrop-blur border-none">
+      <CardHeader>
         <CardTitle>Experience Distribution</CardTitle>
         <CardDescription>Candidate experience levels</CardDescription>
       </CardHeader>
