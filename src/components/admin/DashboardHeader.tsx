@@ -53,7 +53,7 @@ export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
   return (
     <div className="flex justify-between items-center">
       <h1 className="text-foreground-secondary font-bold">
-        Good morning, {recruiterName}!
+        Hello, {recruiterName}!
       </h1>
       <div className="flex items-center space-x-4">
         <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
