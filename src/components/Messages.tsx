@@ -1,8 +1,7 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
@@ -13,14 +12,10 @@ const Messages = () => {
   const { data: messages, isLoading, isError, error } = useQuery({
     queryKey: ['messages'],
     queryFn: async () => {
-      // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("No user found");
 
-      console.log("Fetching messages for user:", user.id);
-
-      // Find the CV associated with this user
       const { data: cv, error: cvError } = await supabase
         .from("cvs")
         .select("id")
@@ -28,14 +23,8 @@ const Messages = () => {
         .maybeSingle();
       
       if (cvError) throw cvError;
-      if (!cv) {
-        console.log("No CV found for user");
-        return [];
-      }
+      if (!cv) return [];
 
-      console.log("Found CV with ID:", cv.id);
-
-      // Get all messages for this CV
       const { data, error: messagesError } = await supabase
         .from('messages')
         .select('*')
@@ -43,9 +32,7 @@ const Messages = () => {
         .order('created_at', { ascending: false });
       
       if (messagesError) throw messagesError;
-      console.log("Retrieved messages:", data);
       
-      // Mark all unread messages as read
       const unreadMessages = data?.filter(msg => !msg.read) || [];
       if (unreadMessages.length > 0) {
         await supabase
@@ -58,7 +45,7 @@ const Messages = () => {
       
       return data || [];
     },
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
   });
 
   if (isLoading) {
@@ -80,47 +67,62 @@ const Messages = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <h3 className="text-2xl font-bold text-primary">Messages</h3>
-        </CardHeader>
-        <CardContent>
-          {messages && messages.length > 0 ? (
-            <ScrollArea className="h-[500px] w-full rounded-md border p-4">
-              <ul className="space-y-4">
-                {messages.map((message) => (
-                  <li key={message.id}>
-                    <Card className="transition-all hover:shadow-md">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start gap-4">
-                          <div className="rounded-full bg-primary/10 p-2">
-                            <MessageSquare className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-muted-foreground">
-                              {formatDistanceToNow(parseISO(message.created_at), { 
-                                addSuffix: true 
-                              })}
-                            </p>
-                            <p className="mt-2 text-foreground">{message.message}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            </ScrollArea>
-          ) : (
-            <div className="text-center text-muted-foreground py-12 bg-muted/30 rounded-lg">
-              <MessageSquare className="mx-auto h-8 w-8 mb-3 text-muted-foreground/60" />
-              <p>No messages yet</p>
+    <Card className="border shadow-sm">
+      <CardContent className="p-0">
+        {messages && messages.length > 0 ? (
+          <ScrollArea className="h-[500px]">
+            <div className="space-y-4 p-4">
+              {messages.map((message) => (
+                <div 
+                  key={message.id} 
+                  className={`
+                    border rounded-lg p-4 transition-all
+                    ${message.read ? 'border-muted' : 'border-primary/30 bg-primary/5'}
+                    hover:border-primary/50 hover:shadow-sm
+                  `}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`
+                      rounded-full p-2 mt-1
+                      ${message.read ? 'bg-muted' : 'bg-primary/10'}
+                    `}>
+                      <MessageSquare className={`
+                        h-5 w-5
+                        ${message.read ? 'text-muted-foreground' : 'text-primary'}
+                      `} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`
+                        text-sm
+                        ${message.read ? 'text-muted-foreground' : 'text-primary font-medium'}
+                      `}>
+                        {formatDistanceToNow(parseISO(message.created_at), { 
+                          addSuffix: true 
+                        })}
+                      </p>
+                      <p className={`
+                        mt-2
+                        ${message.read ? 'text-foreground' : 'font-medium'}
+                      `}>
+                        {message.message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </ScrollArea>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <MessageSquare className="h-10 w-10 mb-4 text-muted-foreground/50" />
+            <h3 className="text-lg font-medium text-muted-foreground">No messages yet</h3>
+            <p className="text-sm text-muted-foreground/70 mt-1">
+              You'll see notifications here when you receive updates
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

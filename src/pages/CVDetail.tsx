@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -64,7 +63,7 @@ const CVDetail = () => {
       }
 
       const messageText = status === "accepted" 
-        ? "Congratulations! Your application has been accepted. We would like to schedule an interview with you soon." 
+        ? "Congratulations! Your application has been accepted. We will contact you soon to schedule an interview." 
         : `We regret to inform you that your application has been rejected. The main area that needs improvement is: ${reason || 'overall profile'}`;
 
       const { error: messageError } = await supabase
@@ -82,59 +81,17 @@ const CVDetail = () => {
         throw messageError;
       }
 
-      // Only create an interview if status is being changed to accepted and one doesn't already exist
-      if (status === "accepted") {
-        // Check if interview already exists
-        const { data: existingInterview, error: checkError } = await supabase
-          .from("interviews")
-          .select("id")
-          .eq("cv_id", id)
-          .maybeSingle();
-        
-        if (checkError) {
-          console.error("Error checking existing interview:", checkError);
-          throw checkError;
-        }
-        
-        // Only create a new interview if one doesn't exist
-        if (!existingInterview) {
-          // Get the current user's ID to set as recruiter_id
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          if (userError) throw userError;
-          if (!user) throw new Error("User not authenticated");
-          
-          console.log("Creating initial interview with recruiter_id:", user.id);
-          
-          const { error: interviewError } = await supabase
-            .from("interviews")
-            .insert([
-              {
-                cv_id: id,
-                status: "scheduled",
-                scheduled_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 1 week from now
-                recruiter_id: user.id, // Set the recruiter_id field
-              },
-            ]);
-          
-          if (interviewError) {
-            console.error("Error creating interview:", interviewError);
-            throw interviewError;
-          }
-        }
-      }
-
       return { status };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["cvs"] });
       queryClient.invalidateQueries({ queryKey: ["cv", id] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
-      queryClient.invalidateQueries({ queryKey: ["interviews"] });
       
       toast({
         title: `Application ${data.status === "accepted" ? "Accepted" : "Rejected"}`,
         description: data.status === "accepted" 
-          ? "The candidate has been moved to the interview stage." 
+          ? "The candidate has been moved to the accepted pool." 
           : "A rejection message has been sent to the candidate.",
       });
     },
