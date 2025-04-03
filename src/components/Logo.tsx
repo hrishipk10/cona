@@ -8,7 +8,7 @@ const Logo = () => {
         Cona
       </h1>
       <p className="text-xl font-medium text-secondary tracking-wider font-['Inconsolata']">
-        CV Management System
+        CV Ordering and Numbering Application
       </p>
     </div>
   );

@@ -172,7 +172,7 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
               Cona
             </h1>
             <p className="text-xl font-medium text-secondary tracking-wider">
-              CV Management System
+              CV Ordering and Numbering Application
             </p>
           </div>
         </motion.div>

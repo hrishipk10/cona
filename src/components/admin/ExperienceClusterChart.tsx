@@ -37,7 +37,7 @@ export const ExperienceClusterChart = ({ experienceGroups }: ExperienceClusterCh
       // Calculate shade of #1D4D59 - darkest for largest group
       // Using HSL: hue 195 (blue-green), saturation 54%, lightness varies from 23% (darkest) to 60% (lightest)
       const lightness = 23 + ((index / Math.max(1, array.length - 1)) * 37);
-      
+
       return {
         experience: group.range,
         count: group.count,
@@ -56,8 +56,8 @@ export const ExperienceClusterChart = ({ experienceGroups }: ExperienceClusterCh
 
     sortedGroups.forEach((group, index, array) => {
       const lightness = 23 + ((index / Math.max(1, array.length - 1)) * 37);
-      const key = group.range.replace(/\s+/g, '-').replace(/-years$/, '');
-      
+      const key = group.range.replace(/\s+/g, "-").replace(/-years$/, "");
+
       config[key] = {
         label: group.range,
         color: `hsl(195, 54%, ${lightness}%)`,
@@ -72,11 +72,14 @@ export const ExperienceClusterChart = ({ experienceGroups }: ExperienceClusterCh
     return experienceChartData.reduce((acc, curr) => acc + curr.count, 0);
   }, [experienceChartData]);
 
-  // Calculate average experience
+  // Calculate average experience (fixed)
   const averageExperience = useMemo(() => {
+    if (totalCandidates === 0) return 0; // Prevent division by zero
+
     const totalExperience = Object.values(experienceGroups).reduce((acc, cvs) => {
-      return acc + cvs.reduce((sum, cv) => sum + cv.years_experience, 0);
+      return acc + cvs.reduce((sum, cv) => sum + (cv.years_experience ?? 0), 0);
     }, 0);
+
     return totalExperience / totalCandidates;
   }, [experienceGroups, totalCandidates]);
 
@@ -92,43 +95,21 @@ export const ExperienceClusterChart = ({ experienceGroups }: ExperienceClusterCh
           className="mx-auto aspect-square max-h-[250px]"
         >
           <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-              data={experienceChartData}
-              dataKey="count"
-              nameKey="experience"
-              innerRadius={60}
-              strokeWidth={5}
-            >
+            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+            <Pie data={experienceChartData} dataKey="count" nameKey="experience" innerRadius={60} strokeWidth={5}>
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                     return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-3xl font-bold"
-                        >
+                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
                           {averageExperience.toFixed(1)}
                         </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
-                        >
+                        <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground">
                           Avg. Experience
                         </tspan>
                       </text>
-                    )
+                    );
                   }
                 }}
               />
