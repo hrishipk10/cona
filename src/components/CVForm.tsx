@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface CVFormData {
   industryExperience: string;
   careerGoals: string;
   cvFile?: FileList;
+  avatar_url?: string;
 }
 
 interface CVFormProps {
@@ -36,6 +38,7 @@ interface CVFormProps {
 
 const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const form = useForm<CVFormData>({
     defaultValues: existingCV
       ? {
@@ -58,6 +61,7 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
           availabilityForRemoteWork: existingCV.availability_for_remote_work,
           industryExperience: existingCV.industry_experience,
           careerGoals: existingCV.career_goals,
+          avatar_url: existingCV.avatar_url,
         }
       : {
           willingnessToRelocate: false,
@@ -68,15 +72,26 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
 
   const onSubmit = async (data: CVFormData) => {
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
+      console.log("Starting CV submission process...");
+      
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user found');
+      if (!user) {
+        console.error("No authenticated user found");
+        throw new Error('You must be logged in to submit a CV');
+      }
+      console.log("User authenticated:", user.id);
 
-      const yearsMatch = data.experience.match(/(\d+)\s*years?/i);
+      // Extract years of experience from the experience string
+      const yearsMatch = data.experience?.match(/(\d+)\s*years?/i);
       const yearsExperience = yearsMatch ? parseInt(yearsMatch[1]) : 0;
+      console.log("Years experience parsed:", yearsExperience);
+      
+      // Process skills and languages arrays
       const skillsArray = data.skills.split(',').map(skill => skill.trim());
-      const languagesArray = data.languagesKnown.split(',').map(lang => lang.trim());
-
+      const languagesArray = data.languagesKnown ? data.languagesKnown.split(',').map(lang => lang.trim()) : [];
+      
       const cvData = {
         applicant_name: data.fullName,
         email: data.email,
@@ -97,30 +112,52 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
         availability_for_remote_work: data.availabilityForRemoteWork,
         industry_experience: data.industryExperience,
         career_goals: data.careerGoals,
+        avatar_url: data.avatar_url,
+        user_id: user.id, // Explicitly set the user_id to ensure RLS works
       };
+      
+      console.log("Prepared CV data:", cvData);
 
-      const { error } = existingCV
-        ? await supabase
-            .from('cvs')
-            .update(cvData)
-            .eq('id', existingCV.id)
-        : await supabase
-            .from('cvs')
-            .insert({
-              ...cvData,
-              status: 'pending',
-              user_id: user.id,
-            });
+      let result;
+      if (existingCV) {
+        console.log("Updating existing CV with ID:", existingCV.id);
+        result = await supabase
+          .from('cvs')
+          .update(cvData)
+          .eq('id', existingCV.id);
+      } else {
+        console.log("Inserting new CV");
+        result = await supabase
+          .from('cvs')
+          .insert({
+            ...cvData,
+            status: 'pending',
+          });
+      }
 
+      const { error } = result;
       if (error) {
+        console.error("Supabase error:", error);
+        let errorMsg = "There was an error submitting your CV. ";
+        
+        if (error.message.includes("violates row level security")) {
+          errorMsg += "Permission denied. Please make sure you're logged in correctly.";
+        } else if (error.message.includes("violates not-null constraint")) {
+          errorMsg += "Please fill in all required fields.";
+        } else {
+          errorMsg += error.message;
+        }
+        
+        setErrorMessage(errorMsg);
         toast({
           title: "Submission Failed",
-          description: "There was an error submitting your CV. Please try again.",
+          description: errorMsg,
           variant: "destructive",
         });
         throw error;
       }
 
+      console.log("CV submitted successfully");
       toast({
         title: "Success!",
         description: existingCV
@@ -135,9 +172,10 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
       }
     } catch (error) {
       console.error('Error submitting CV:', error);
+      const errorMsg = errorMessage || "Failed to submit CV. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to submit CV. Please try again.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -148,7 +186,14 @@ const CVForm = ({ existingCV, onSubmitSuccess }: CVFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {errorMessage && (
+          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+            <span className="font-medium">Error:</span> {errorMessage}
+          </div>
+        )}
+        
         <CVFormFields form={form} isNewSubmission={!existingCV} />
+        
         <Button
           type="submit"
           className="w-full"

@@ -12,9 +12,17 @@ interface LoginPageProps {
   type: "admin" | "applicant";
   customAuthHandler?: (email: string, password: string) => Promise<boolean>;
   defaultEmail?: string;
+  onSuccess?: (user: any) => void;
+  onError?: (error: any) => void;
 }
 
-const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) => {
+const LoginPage = ({ 
+  type, 
+  customAuthHandler, 
+  defaultEmail, 
+  onSuccess, 
+  onError 
+}: LoginPageProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -26,11 +34,13 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
     if (type === "applicant") {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session) {
+          console.log("LoginPage detected sign in");
         }
       });
 
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
+          console.log("Session found in LoginPage");
           navigate("/client/dashboard");
         }
       });
@@ -71,10 +81,12 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
               description: passwordError,
               variant: "destructive",
             });
+            if (onError) onError({ message: passwordError });
             setLoading(false);
             return;
           }
 
+          console.log("Attempting to sign up with email:", email);
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -84,6 +96,7 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
           });
 
           if (error) {
+            console.error("Signup error:", error);
             if (error.message.includes("User already registered")) {
               toast({
                 title: "Account Exists",
@@ -97,7 +110,9 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
                 variant: "destructive",
               });
             }
+            if (onError) onError(error);
           } else if (data.user) {
+            console.log("Signup successful:", data.user);
             if (!data.user.email_confirmed_at) {
               toast({
                 title: "Signup successful",
@@ -109,17 +124,20 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
                 description: "You can now log in with your credentials.",
               });
             }
+            if (onSuccess) onSuccess(data.user);
             setEmail("");
             setPassword("");
             setIsSignUp(false);
           }
         } else {
+          console.log("Attempting to sign in with email:", email);
           const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
           });
 
           if (error) {
+            console.error("Login error:", error);
             if (error.message.includes("Invalid login credentials")) {
               toast({
                 title: "Login failed",
@@ -133,11 +151,14 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
                 variant: "destructive",
               });
             }
+            if (onError) onError(error);
           } else if (data.user) {
+            console.log("Login successful:", data.user);
             toast({
               title: "Login successful",
               description: "Welcome back!",
             });
+            if (onSuccess) onSuccess(data.user);
             navigate("/client/dashboard");
           }
         }
@@ -149,6 +170,7 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+      if (onError) onError(error);
     } finally {
       setLoading(false);
     }
@@ -156,28 +178,25 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#16404D] to-[#2C768D] relative overflow-hidden">
-      {/* Animated background elements */}
       <div className="absolute w-96 h-96 bg-indigo-100/30 rounded-full -top-48 -right-48" />
       <div className="absolute w-96 h-96 bg-blue-100/30 rounded-full -bottom-48 -left-48" />
 
       <div className="relative min-h-screen container grid lg:grid-cols-2">
-        {/* Left side with centered logo */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="hidden lg:flex flex-col items-center justify-center"
         >
           <div className="text-center space-y-4">
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-[#FBF5DD] to-[#AAA591] bg-clip-text text-transparent">
+            <h1 className="text-6xl font-bold font-karla bg-gradient-to-r from-[#FBF5DD] to-[#AAA591] bg-clip-text text-transparent">
               Cona
             </h1>
-            <p className="text-xl font-medium text-secondary tracking-wider">
+            <p className="text-xl font-medium font-inconsolata text-secondary tracking-wider">
               CV Ordering and Numbering Application
             </p>
           </div>
         </motion.div>
 
-        {/* Right side with login/signup form */}
         <div className="flex items-center justify-center p-8">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -199,12 +218,12 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
                 </Button>
                 
                 <div className="space-y-2 text-center pt-8">
-                  <CardTitle className="text-3xl font-bold text-teal">
+                  <CardTitle className="text-3xl font-bold font-karla text-teal">
                     {type === "admin" 
                       ? "Admin Portal" 
                       : isSignUp ? "Get Started" : "Welcome Back"}
                   </CardTitle>
-                  <CardDescription className="text-teal">
+                  <CardDescription className="text-teal font-inconsolata">
                     {type === "admin"
                       ? "Manage CV submissions and applications"
                       : isSignUp 
@@ -290,7 +309,6 @@ const LoginPage = ({ type, customAuthHandler, defaultEmail }: LoginPageProps) =>
         </div>
       </div>
 
-      {/* Footer */}
       <div className="absolute bottom-4 w-full text-center">
         <p className="text-sm text-white">
           Created by Aadhith CJ, Sameer, Nafiya
