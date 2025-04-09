@@ -16,6 +16,7 @@ const InterviewCard = ({ interview, onStatusChange }: {
   onStatusChange: (id: string, status: string) => void;
 }) => {
   const isPending = interview.status === "scheduled" || interview.status === "pending";
+  const isConfirmed = interview.status === "confirmed";
 
   return (
     <Card className="border rounded-lg shadow-sm mb-4 bg-background">
@@ -50,17 +51,19 @@ const InterviewCard = ({ interview, onStatusChange }: {
               {interview.status === "scheduled" ? "pending" : interview.status}
             </Badge>
             
-            {isPending && (
+            {(isPending || isConfirmed) && (
               <div className="flex space-x-2 mt-3 justify-end">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex items-center gap-1 bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
-                  onClick={() => onStatusChange(interview.id, "confirmed")}
-                >
-                  <Check className="h-4 w-4" />
-                  Accept
-                </Button>
+                {!isConfirmed && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex items-center gap-1 bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                    onClick={() => onStatusChange(interview.id, "confirmed")}
+                  >
+                    <Check className="h-4 w-4" />
+                    Accept
+                  </Button>
+                )}
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -130,11 +133,13 @@ const InterviewTab = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
       toast({
-        title: "Interview updated",
-        description: "Your response has been recorded successfully.",
+        title: variables.status === "confirmed" ? "Interview accepted" : "Interview declined",
+        description: variables.status === "confirmed" ? 
+          "You have successfully accepted this interview." : 
+          "You have declined this interview opportunity.",
       });
     },
     onError: (error) => {

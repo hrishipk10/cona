@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Check, X, Clock } from "lucide-react";
+import { Calendar, Check, X, Clock, AlertCircle } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -18,7 +18,7 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
 
   const upcomingInterviews = interviews 
     ? [...interviews]
-        .filter(interview => interview.status === 'scheduled' || interview.status === 'confirmed' || interview.status === 'pending')
+        .filter(interview => interview.status === 'scheduled' || interview.status === 'confirmed' || interview.status === 'pending' || interview.status === 'declined')
         .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
         .slice(0, 4)
     : [];
@@ -37,7 +37,7 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'confirmed':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Confirmed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Accepted</Badge>;
       case 'declined':
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Declined</Badge>;
       default:
