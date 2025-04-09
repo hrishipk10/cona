@@ -1,57 +1,94 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { format, parseISO } from 'date-fns';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarIcon, Clock, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const InterviewCard = ({ interview }: { interview: any }) => (
-  <Card className="border rounded-lg shadow-sm mb-4 bg-background">
-    <CardContent className="p-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-start space-x-4">
-          <div className="bg-primary/10 p-3 rounded-full">
-            <CalendarIcon className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold text-lg text-primary">
-              {format(parseISO(interview.scheduled_at), 'EEEE, MMMM do, yyyy')}
-            </p>
-            <div className="flex items-center text-muted-foreground mt-1">
-              <Clock className="h-4 w-4 mr-1" />
-              <span>{format(parseISO(interview.scheduled_at), 'h:mm a')}</span>
+const InterviewCard = ({ interview, onStatusChange }: { 
+  interview: any; 
+  onStatusChange: (id: string, status: string) => void;
+}) => {
+  const isPending = interview.status === "scheduled" || interview.status === "pending";
+
+  return (
+    <Card className="border rounded-lg shadow-sm mb-4 bg-background">
+      <CardContent className="p-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-start space-x-4">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <CalendarIcon className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-lg text-primary">
+                {format(parseISO(interview.scheduled_at), 'EEEE, MMMM do, yyyy')}
+              </p>
+              <div className="flex items-center text-muted-foreground mt-1">
+                <Clock className="h-4 w-4 mr-1" />
+                <span>{format(parseISO(interview.scheduled_at), 'h:mm a')}</span>
+              </div>
             </div>
           </div>
+          <div className="text-right">
+            <Badge
+              className={`${
+                interview.status === "confirmed"
+                  ? "bg-green-100 hover:bg-green-200 text-green-800"
+                  : interview.status === "pending" || interview.status === "scheduled"
+                  ? "bg-secondary text-secondary-foreground"
+                  : interview.status === "declined"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {interview.status === "scheduled" ? "pending" : interview.status}
+            </Badge>
+            
+            {isPending && (
+              <div className="flex space-x-2 mt-3 justify-end">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex items-center gap-1 bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                  onClick={() => onStatusChange(interview.id, "confirmed")}
+                >
+                  <Check className="h-4 w-4" />
+                  Accept
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex items-center gap-1 bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                  onClick={() => onStatusChange(interview.id, "declined")}
+                >
+                  <X className="h-4 w-4" />
+                  Decline
+                </Button>
+              </div>
+            )}
+            
+            {interview.feedback && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Feedback: {interview.feedback}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="text-right">
-          <Badge
-            className={`${
-              interview.status === "confirmed"
-                ? "bg-green-100 hover:bg-green-200 text-green-800"
-                : interview.status === "pending" || interview.status === "scheduled"
-                ? "bg-secondary text-secondary-foreground"
-                : "bg-destructive/10 text-destructive"
-            }`}
-          >
-            {interview.status === "scheduled" ? "pending" : interview.status}
-          </Badge>
-          {interview.feedback && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Feedback: {interview.feedback}
-            </p>
-          )}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 const InterviewTab = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const fetchUserInterviews = async () => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -79,6 +116,39 @@ const InterviewTab = () => {
     
     console.log("Retrieved interviews:", interviews);
     return interviews || [];
+  };
+
+  const updateInterviewStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      console.log(`Updating interview ${id} status to ${status}`);
+      const { data, error } = await supabase
+        .from("interviews")
+        .update({ status })
+        .eq("id", id)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
+      toast({
+        title: "Interview updated",
+        description: "Your response has been recorded successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to update interview:", error);
+      toast({
+        title: "Failed to update",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStatusChange = (id: string, status: string) => {
+    updateInterviewStatus.mutate({ id, status });
   };
 
   const {
@@ -171,7 +241,11 @@ const InterviewTab = () => {
             <div className="md:w-2/3 mt-6 md:mt-0 space-y-4">
               {interviewsByDate && interviewsByDate.length > 0 ? (
                 interviewsByDate.map((interview) => (
-                  <InterviewCard key={interview.id} interview={interview} />
+                  <InterviewCard 
+                    key={interview.id} 
+                    interview={interview} 
+                    onStatusChange={handleStatusChange}
+                  />
                 ))
               ) : (
                 <p className="text-center text-muted-foreground py-8">

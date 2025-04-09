@@ -1,69 +1,112 @@
 
-import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
-interface DashboardHeaderProps {
-  userName?: string;
-}
-
-export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
+export const DashboardHeader = () => {
   const navigate = useNavigate();
-  const [recruiterName, setRecruiterName] = useState(userName || "User");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [pendingInterviews, setPendingInterviews] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    async function fetchRecruiterData() {
-      try {
-        const { data, error } = await supabase
-          .from("settings")
-          .select("recruiter_name, recruiter_avatar_url")
-          .single();
-
-        if (error) {
-          console.error("Error fetching recruiter data:", error);
-          return;
-        }
-
-        if (data) {
-          if (data.recruiter_name) {
-            setRecruiterName(data.recruiter_name);
-          }
-          
-          if (data.recruiter_avatar_url) {
-            setAvatarUrl(data.recruiter_avatar_url);
-          }
-        }
-      } catch (error) {
-        console.error("Error in fetching recruiter data:", error);
+    const fetchPendingInterviews = async () => {
+      setIsLoading(true);
+      const { count, error } = await supabase
+        .from("interviews")
+        .select("*", { count: 'exact' })
+        .eq("status", "scheduled");
+      
+      if (error) {
+        console.error("Error fetching pending interviews:", error);
+      } else {
+        setPendingInterviews(count || 0);
       }
-    }
+      setIsLoading(false);
+    };
 
-    fetchRecruiterData();
-  }, [userName]);
+    fetchPendingInterviews();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/admin/login");
-  };
+    // Set up a subscription to interview status changes
+    const channel = supabase
+      .channel('admin-dashboard')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'interviews',
+        },
+        () => {
+          fetchPendingInterviews();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
-    <div className="flex justify-between items-center">
-      <h1 className="text-foreground-secondary font-bold">
-        Hello, {recruiterName}!
-      </h1>
-      <div className="flex items-center space-x-4">
-        <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
-          <LogOut className="w-4 h-4" />
-          Logout
-        </Button>
-        <Avatar className="bg-foreground">
-          <AvatarImage src={avatarUrl || "/avatars/batman.jpg"} />
-          <AvatarFallback>{recruiterName.charAt(0)}</AvatarFallback>
-        </Avatar>
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-bold">Dashboard</h1>
+
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search..."
+            className="w-[200px] sm:w-[300px] pl-8"
+          />
+        </div>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="relative"
+            >
+              <Bell className="h-5 w-5" />
+              {pendingInterviews > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {pendingInterviews}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72" align="end">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h4 className="font-medium leading-none">Notifications</h4>
+                <p className="text-sm text-muted-foreground">
+                  {pendingInterviews} interview{pendingInterviews !== 1 ? 's' : ''} waiting for candidate response.
+                </p>
+              </div>
+              {pendingInterviews > 0 && (
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/admin/messages')}
+                  className="w-full"
+                >
+                  View All Interviews
+                </Button>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
