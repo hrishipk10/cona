@@ -15,8 +15,9 @@ const InterviewCard = ({ interview, onStatusChange }: {
   interview: any; 
   onStatusChange: (id: string, status: string) => void;
 }) => {
-  const isPending = interview.status === "scheduled" || interview.status === "pending";
   const isConfirmed = interview.status === "confirmed";
+  const isDeclined = interview.status === "declined";
+  const isPending = interview.status === "scheduled" || interview.status === "pending";
 
   return (
     <Card className="border rounded-lg shadow-sm mb-4 bg-background">
@@ -34,36 +35,61 @@ const InterviewCard = ({ interview, onStatusChange }: {
                 <Clock className="h-4 w-4 mr-1" />
                 <span>{format(parseISO(interview.scheduled_at), 'h:mm a')}</span>
               </div>
+              <div className="mt-2">
+                <Badge
+                  className={`${
+                    interview.status === "confirmed"
+                      ? "bg-green-100 hover:bg-green-200 text-green-800"
+                      : interview.status === "pending" || interview.status === "scheduled"
+                      ? "bg-secondary text-secondary-foreground"
+                      : interview.status === "declined"
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {interview.status === "scheduled" ? "pending" : interview.status}
+                </Badge>
+              </div>
             </div>
           </div>
           <div className="text-right">
-            <Badge
-              className={`${
-                interview.status === "confirmed"
-                  ? "bg-green-100 hover:bg-green-200 text-green-800"
-                  : interview.status === "pending" || interview.status === "scheduled"
-                  ? "bg-secondary text-secondary-foreground"
-                  : interview.status === "declined"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {interview.status === "scheduled" ? "pending" : interview.status}
-            </Badge>
-            
-            {(isPending || isConfirmed) && (
-              <div className="flex space-x-2 mt-3 justify-end">
-                {!isConfirmed && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex items-center gap-1 bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
-                    onClick={() => onStatusChange(interview.id, "confirmed")}
-                  >
-                    <Check className="h-4 w-4" />
-                    Accept
-                  </Button>
-                )}
+            <div className="flex space-x-2 mt-3 justify-end">
+              {!isDeclined && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className={`flex items-center gap-1 ${
+                    isConfirmed 
+                      ? "bg-green-50 text-green-700 hover:bg-green-100 border-green-200" 
+                      : "bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                  }`}
+                  onClick={() => onStatusChange(interview.id, "confirmed")}
+                  disabled={isConfirmed}
+                >
+                  <Check className="h-4 w-4" />
+                  {isConfirmed ? "Accepted" : "Accept"}
+                </Button>
+              )}
+              
+              {!isConfirmed && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className={`flex items-center gap-1 ${
+                    isDeclined 
+                      ? "bg-red-50 text-red-700 hover:bg-red-100 border-red-200" 
+                      : "bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                  }`}
+                  onClick={() => onStatusChange(interview.id, "declined")}
+                  disabled={isDeclined}
+                >
+                  <X className="h-4 w-4" />
+                  {isDeclined ? "Declined" : "Decline"}
+                </Button>
+              )}
+              
+              {/* Always show option to decline even if accepted */}
+              {isConfirmed && (
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -73,8 +99,8 @@ const InterviewCard = ({ interview, onStatusChange }: {
                   <X className="h-4 w-4" />
                   Decline
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
             
             {interview.feedback && (
               <p className="text-sm text-muted-foreground mt-2">
@@ -161,10 +187,29 @@ const InterviewTab = () => {
     isLoading,
     isError,
     error,
+    refetch
   } = useQuery({
     queryKey: ["userInterviews"],
     queryFn: fetchUserInterviews,
   });
+
+  // Force refetch to see changes immediately
+  useEffect(() => {
+    const channel = supabase
+      .channel('table-db-changes')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'interviews'
+      }, () => {
+        refetch();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (isLoading) {
     return (
