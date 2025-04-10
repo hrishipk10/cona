@@ -9,6 +9,7 @@ import {
   Github,
   Globe,
   Download,
+  ExternalLink,
 } from "lucide-react";
 import { useRef } from "react";
 import html2canvas from "html2canvas";
@@ -169,6 +170,57 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
     }
   };
 
+  // New function to render social links with proper formatting
+  const renderSocialLinks = (
+    linkedinProfile?: string,
+    githubProfile?: string,
+    portfolioLink?: string,
+    className?: string,
+    iconClassName?: string,
+    labelClassName?: string
+  ) => {
+    return (
+      <div className={`flex flex-wrap items-center gap-3 ${className || ""}`}>
+        {linkedinProfile && (
+          <a
+            href={linkedinProfile}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:underline transition-colors"
+          >
+            <Linkedin className={`${iconClassName || "w-5 h-5"}`} />
+            <span className={labelClassName || ""}>LinkedIn</span>
+            <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
+          </a>
+        )}
+        {githubProfile && (
+          <a
+            href={githubProfile}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:underline transition-colors"
+          >
+            <Github className={`${iconClassName || "w-5 h-5"}`} />
+            <span className={labelClassName || ""}>GitHub</span>
+            <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
+          </a>
+        )}
+        {portfolioLink && (
+          <a
+            href={portfolioLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:underline transition-colors"
+          >
+            <Globe className={`${iconClassName || "w-5 h-5"}`} />
+            <span className={labelClassName || ""}>Portfolio</span>
+            <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
+          </a>
+        )}
+      </div>
+    );
+  };
+
   const renderTheme = () => {
     const themeParts = (cv.theme || 'default').split('-');
     const themeType = themeParts[0];
@@ -219,37 +271,14 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
             {cv.industry_experience && (
               <p className="text-muted-foreground mt-1">{cv.industry_experience}</p>
             )}
-            {/* Social Links */}
-            <div className="flex justify-center md:justify-start space-x-4 mt-4">
-              {cv.linkedin_profile && (
-                <a
-                  href={cv.linkedin_profile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`hover:${accentClasses} transition-colors`}
-                >
-                  <Linkedin className="w-6 h-6" />
-                </a>
-              )}
-              {cv.github_profile && (
-                <a
-                  href={cv.github_profile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`hover:${accentClasses} transition-colors`}
-                >
-                  <Github className="w-6 h-6" />
-                </a>
-              )}
-              {cv.portfolio_link && (
-                <a
-                  href={cv.portfolio_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`hover:${accentClasses} transition-colors`}
-                >
-                  <Globe className="w-6 h-6" />
-                </a>
+            {/* Updated Social Links */}
+            <div className="mt-4 flex-wrap">
+              {renderSocialLinks(
+                cv.linkedin_profile, 
+                cv.github_profile, 
+                cv.portfolio_link, 
+                "justify-center md:justify-start",
+                `w-5 h-5 ${accentClasses}`
               )}
             </div>
           </div>
@@ -463,42 +492,15 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
             )}
           </div>
 
-          {/* Social Links */}
-          <div className="flex justify-center space-x-4 mt-4">
-            {cv.linkedin_profile && (
-              <a
-                href={cv.linkedin_profile}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-500 hover:text-gray-700"
-                style={{ color: accentColor }}
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
-            )}
-            {cv.github_profile && (
-              <a
-                href={cv.github_profile}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-500 hover:text-gray-700"
-                style={{ color: accentColor }}
-              >
-                <Github className="w-5 h-5" />
-              </a>
-            )}
-            {cv.portfolio_link && (
-              <a
-                href={cv.portfolio_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-500 hover:text-gray-700"
-                style={{ color: accentColor }}
-              >
-                <Globe className="w-5 h-5" />
-              </a>
-            )}
-          </div>
+          {/* Updated Social Links */}
+          {renderSocialLinks(
+            cv.linkedin_profile, 
+            cv.github_profile, 
+            cv.portfolio_link, 
+            "justify-center mt-4",
+            "w-5 h-5",
+            "text-sm"
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-8">
@@ -674,42 +676,15 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
               )}
             </div>
             
-            {/* Social Links */}
-            <div className="flex justify-center md:justify-start space-x-4 mt-4">
-              {cv.linkedin_profile && (
-                <a
-                  href={cv.linkedin_profile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: accentColor }}
-                  className="hover:opacity-80 transition-colors"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              )}
-              {cv.github_profile && (
-                <a
-                  href={cv.github_profile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: accentColor }}
-                  className="hover:opacity-80 transition-colors"
-                >
-                  <Github className="w-5 h-5" />
-                </a>
-              )}
-              {cv.portfolio_link && (
-                <a
-                  href={cv.portfolio_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: accentColor }}
-                  className="hover:opacity-80 transition-colors"
-                >
-                  <Globe className="w-5 h-5" />
-                </a>
-              )}
-            </div>
+            {/* Updated Social Links */}
+            {renderSocialLinks(
+              cv.linkedin_profile,
+              cv.github_profile,
+              cv.portfolio_link,
+              "justify-center md:justify-start mt-4",
+              "w-5 h-5",
+              "text-sm",
+            )}
           </div>
           
           {/* Status */}
@@ -912,458 +887,4 @@ const CVDisplay = ({ cv, onEdit, isAdmin = false, onThemeChange, onThemeColorCha
                 ? "bg-green-100 text-green-800"
                 : cv.status === "rejected"
                 ? "bg-red-100 text-red-800"
-                : "bg-yellow-100 text-yellow-800"
-            }`}
-          >
-            {cv.status}
-          </span>
-        </div>
-        
-        {/* Content */}
-        <div className="p-8 pt-16">
-          {/* Contact & Social Row */}
-          <div className="flex flex-wrap justify-between items-center mb-10 p-4 bg-white/50 rounded-lg shadow-sm">
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              {cv.email && (
-                <a href={`mailto:${cv.email}`} className="flex items-center hover:opacity-80 transition-colors" style={{ color: colors.primary }}>
-                  <Mail className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
-                  {cv.email}
-                </a>
-              )}
-              {cv.phone && (
-                <a href={`tel:${cv.phone}`} className="flex items-center hover:opacity-80 transition-colors" style={{ color: colors.primary }}>
-                  <Phone className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
-                  {cv.phone}
-                </a>
-              )}
-              {cv.address && (
-                <span className="flex items-center" style={{ color: colors.primary }}>
-                  <MapPin className="w-4 h-4 mr-1" style={{ color: colors.primary }} />
-                  {cv.address}
-                </span>
-              )}
-            </div>
-            
-            <div className="flex space-x-3 mt-2 sm:mt-0">
-              {cv.linkedin_profile && (
-                <a
-                  href={cv.linkedin_profile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-primary hover:text-white transition-all shadow-sm"
-                  style={{ color: colors.primary }}
-                >
-                  <Linkedin className="w-4 h-4" />
-                </a>
-              )}
-              {cv.github_profile && (
-                <a
-                  href={cv.github_profile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-primary hover:text-white transition-all shadow-sm"
-                  style={{ color: colors.primary }}
-                >
-                  <Github className="w-4 h-4" />
-                </a>
-              )}
-              {cv.portfolio_link && (
-                <a
-                  href={cv.portfolio_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-primary hover:text-white transition-all shadow-sm"
-                  style={{ color: colors.primary }}
-                >
-                  <Globe className="w-4 h-4" />
-                </a>
-              )}
-            </div>
-          </div>
-          
-          {/* Main Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-            {/* Left Column - 2/5 */}
-            <div className="md:col-span-2 space-y-8">
-              {/* Skills */}
-              <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                  <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                  Skills
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {cv.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-white border rounded-full text-sm"
-                      style={{ color: colors.primary, borderColor: `${colors.primary}20` }}
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Languages */}
-              {cv.languages_known && cv.languages_known.length > 0 && (
-                <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                    Languages
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {cv.languages_known.map((language, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-white border rounded-full text-sm"
-                        style={{ color: colors.primary, borderColor: `${colors.primary}20` }}
-                      >
-                        {language}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Work Preferences */}
-              <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                  <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                  Work Preferences
-                </h2>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${cv.willingness_to_relocate ? "bg-green-500" : "bg-red-500"}`}></div>
-                    <span className="font-medium">Relocation:</span>
-                    <span className="ml-2">{cv.willingness_to_relocate ? "Yes" : "No"}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${cv.availability_for_remote_work ? "bg-green-500" : "bg-red-500"}`}></div>
-                    <span className="font-medium">Remote Work:</span>
-                    <span className="ml-2">{cv.availability_for_remote_work ? "Yes" : "No"}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Desired Salary */}
-              {cv.desired_salary && (
-                <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                    Salary Expectation
-                  </h2>
-                  <div className="p-3 rounded-lg text-center" style={{ backgroundColor: `${colors.primary}10` }}>
-                    <span className="text-lg font-mono font-semibold" style={{ color: colors.primary }}>{cv.desired_salary}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Right Column - 3/5 */}
-            <div className="md:col-span-3 space-y-8">
-              {/* Experience */}
-              <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                  <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                  Professional Experience
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex flex-wrap justify-between items-center">
-                    <div className="px-4 py-2 text-white rounded-full" style={{ backgroundColor: colors.primary }}>
-                      {cv.years_experience} Years Experience
-                    </div>
-                    {cv.industry_experience && (
-                      <span className="text-gray-600 text-sm">{cv.industry_experience}</span>
-                    )}
-                  </div>
-                  {cv.career_goals && (
-                    <div className="mt-3 p-4 bg-white rounded-md border-l-4" style={{ borderColor: colors.primary }}>
-                      <p className="text-gray-700">{cv.career_goals}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Education */}
-              {cv.education && (
-                <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                    Education
-                  </h2>
-                  <p className="text-gray-700">{cv.education}</p>
-                </div>
-              )}
-              
-              {/* Certifications */}
-              {cv.certifications && (
-                <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                    Certifications
-                  </h2>
-                  <p className="text-gray-700">{cv.certifications}</p>
-                </div>
-              )}
-              
-              {/* References */}
-              {cv.references && (
-                <div className="bg-white/60 p-5 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: colors.primary }}>
-                    <span className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: colors.primary }}></span>
-                    References
-                  </h2>
-                  <p className="text-gray-700 italic">{cv.references}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Helper functions for color schemes
-  const getMinimalAccentColor = (color: string): string => {
-    switch (color) {
-      case 'blue': return '#3b82f6';
-      case 'green': return '#10b981';
-      case 'purple': return '#8b5cf6';
-      case 'red': return '#ef4444';
-      default: return '#4b5563'; // gray (default)
-    }
-  };
-
-  const getElegantAccentColor = (color: string): string => {
-    switch (color) {
-      case 'teal': return '#0d9488';
-      case 'purple': return '#8b5cf6';
-      case 'burgundy': return '#be185d';
-      case 'forest': return '#166534';
-      default: return '#3b82f6'; // blue (default)
-    }
-  };
-
-  const getElegantHeaderColor = (color: string): string => {
-    switch (color) {
-      case 'teal': return '#99f6e4';
-      case 'purple': return '#d8b4fe';
-      case 'burgundy': return '#fbcfe8';
-      case 'forest': return '#bbf7d0';
-      default: return '#bfdbfe'; // blue (default)
-    }
-  };
-
-  const getCreativeColors = (color: string): {primary: string, secondary: string, accent: string, bgStart: string, bgEnd: string} => {
-    switch (color) {
-      case 'pink':
-        return {
-          primary: '#ec4899',
-          secondary: '#f472b6',
-          accent: '#ec4899',
-          bgStart: '#fff0f6',
-          bgEnd: '#ffe4e6'
-        };
-      case 'teal':
-        return {
-          primary: '#14b8a6',
-          secondary: '#2dd4bf',
-          accent: '#14b8a6',
-          bgStart: '#e6fffa',
-          bgEnd: '#ccfbf1'
-        };
-      case 'purple':
-        return {
-          primary: '#8b5cf6',
-          secondary: '#a78bfa',
-          accent: '#8b5cf6',
-          bgStart: '#f3f0ff',
-          bgEnd: '#e9d5ff'
-        };
-      case 'green':
-        return {
-          primary: '#10b981',
-          secondary: '#34d399',
-          accent: '#10b981',
-          bgStart: '#ebfbee',
-          bgEnd: '#d1fae5'
-        };
-      default: // orange
-        return {
-          primary: '#f97316',
-          secondary: '#fb923c',
-          accent: '#f97316',
-          bgStart: '#fff8f0',
-          bgEnd: '#ffedd5'
-        };
-    }
-  };
-
-  const getThemeClasses = (theme: string): string => {
-    switch (theme) {
-      case 'dark':
-        return 'bg-gray-900 text-white shadow-xl';
-      case 'blue':
-        return 'bg-blue-50 text-blue-900 shadow-lg';
-      case 'green':
-        return 'bg-green-50 text-green-900 shadow-lg';
-      case 'purple':
-        return 'bg-purple-50 text-purple-900 shadow-lg';
-      default:
-        return 'bg-secondary shadow-lg';
-    }
-  };
-
-  const getHeaderClasses = (theme: string): string => {
-    switch (theme) {
-      case 'dark':
-        return 'bg-gray-800 text-white';
-      case 'blue':
-        return 'bg-blue-100 text-blue-800';
-      case 'green':
-        return 'bg-green-100 text-green-800';
-      case 'purple':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-secondary text-foreground';
-    }
-  };
-
-  const getAccentClasses = (theme: string): string => {
-    switch (theme) {
-      case 'dark':
-        return 'text-blue-400';
-      case 'blue':
-        return 'text-blue-600';
-      case 'green':
-        return 'text-green-600';
-      case 'purple':
-        return 'text-purple-600';
-      default:
-        return 'text-primary';
-    }
-  };
-
-  const getButtonClasses = (theme: string): string => {
-    switch (theme) {
-      case 'dark':
-        return 'bg-blue-600 text-white hover:bg-blue-700';
-      case 'blue':
-        return 'bg-blue-500 text-white hover:bg-blue-600';
-      case 'green':
-        return 'bg-green-500 text-white hover:bg-green-600';
-      case 'purple':
-        return 'bg-purple-500 text-white hover:bg-purple-600';
-      default:
-        return '';
-    }
-  };
-
-  const getSkillClasses = (theme: string): string => {
-    switch (theme) {
-      case 'dark':
-        return 'bg-gray-700 text-white';
-      case 'blue':
-        return 'bg-blue-200 text-blue-800';
-      case 'green':
-        return 'bg-green-200 text-green-800';
-      case 'purple':
-        return 'bg-purple-200 text-purple-800';
-      default:
-        return 'bg-primary text-background';
-    }
-  };
-
-  // Extract theme type and color
-  const getThemeTypeAndColor = (themeValue: string): { type: string, color: string } => {
-    const parts = themeValue.split('-');
-    return {
-      type: parts[0] || 'default',
-      color: parts[1] || ''
-    };
-  };
-
-  const { type: themeType, color: themeColor } = getThemeTypeAndColor(cv.theme || 'default');
-
-  return (
-    <div>
-      {!isAdmin && onThemeChange && (
-        <div className="mb-6">
-          <Tabs defaultValue="layout" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="layout">Layout</TabsTrigger>
-              <TabsTrigger value="color">Color</TabsTrigger>
-            </TabsList>
-            <TabsContent value="layout">
-              <Select
-                value={themeType}
-                onValueChange={(value) => {
-                  const newTheme = themeColor ? `${value}-${themeColor}` : value;
-                  onThemeChange(newTheme);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select theme layout" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Default</SelectItem>
-                  <SelectItem value="minimal">Minimal</SelectItem>
-                  <SelectItem value="elegant">Elegant</SelectItem>
-                  <SelectItem value="creative">Creative</SelectItem>
-                </SelectContent>
-              </Select>
-            </TabsContent>
-            <TabsContent value="color">
-              <Select
-                value={themeColor || ''}
-                onValueChange={(value) => {
-                  const newTheme = value ? `${themeType}-${value}` : themeType;
-                  onThemeChange(newTheme);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select color scheme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COLOR_PALETTES[themeType as keyof typeof COLOR_PALETTES]?.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
-
-      <div ref={cvRef}>
-        {renderTheme()}
-      </div>
-
-      {/* Actions */}
-      <div className="flex justify-end mt-4 gap-3">
-        <Button
-          onClick={handleDownloadPDF}
-          className="flex items-center gap-2"
-          variant="outline"
-        >
-          <Download className="h-4 w-4" />
-          Download PDF
-        </Button>
-
-        {!isAdmin && (
-          <Button
-            onClick={onEdit}
-            className="flex items-center gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            Edit CV
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default CVDisplay;
+                : "bg-yellow-100 text-yellow-
