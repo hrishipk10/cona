@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
-import { LogOut, ChevronRight, Clock } from "lucide-react";
+import { LogOut, ChevronRight, Clock, Check, X, Calendar as CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format, parse, setHours, setMinutes } from "date-fns";
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DashboardHeader } from "@/components/admin/DashboardHeader";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
@@ -192,6 +193,7 @@ const MessagesInterviewsPage = () => {
             scheduled_at: scheduledDate.toISOString(),
             updated_at: new Date().toISOString(),
             recruiter_id: user.id,
+            status: "scheduled", // Reset status on rescheduling
           })
           .eq("id", existingInterview.id);
         
@@ -278,6 +280,14 @@ const MessagesInterviewsPage = () => {
   const acceptedCvs = cvs?.filter(cv => cv.status === "accepted") || [];
   const rejectedCvs = cvs?.filter(cv => cv.status === "rejected") || [];
   
+  const scheduledInterviews = interviews?.filter(interview => 
+    interview.status === "scheduled" || 
+    interview.status === "confirmed" || 
+    interview.status === "pending" || 
+    interview.status === "declined"
+  ) || [];
+  
+  console.log("Scheduled Interviews:", scheduledInterviews);
   console.log("Accepted CVs:", acceptedCvs);
   console.log("Rejected CVs:", rejectedCvs);
 
@@ -304,6 +314,17 @@ const MessagesInterviewsPage = () => {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'confirmed':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Accepted</Badge>;
+      case 'declined':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Declined</Badge>;
+      default:
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">Awaiting Response</Badge>;
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
@@ -323,26 +344,176 @@ const MessagesInterviewsPage = () => {
 
       <div className="ml-[88px] p-6 w-full">
         <div className="bg-secondary backdrop-blur rounded-xl p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Messages & Interviews</h1>
-            <div className="flex items-center space-x-4">
-              <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
-              <Avatar className="bg-foreground">
-                <AvatarImage src="/avatars/batman.jpg" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
+          <DashboardHeader />
         </div>
 
-        <Tabs defaultValue="accepted" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+        <Tabs defaultValue="interviews" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="interviews">Interviews</TabsTrigger>
             <TabsTrigger value="accepted">Accepted CVs</TabsTrigger>
             <TabsTrigger value="rejected">Rejected CVs</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="interviews">
+            <div className="grid grid-cols-1 gap-4">
+              {scheduledInterviews.length > 0 ? (
+                scheduledInterviews.map((interview) => {
+                  const cv = cvs?.find(cv => cv.id === interview.cv_id);
+                  return (
+                    <Card key={interview.id} className="bg-white shadow-sm">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4">
+                            <div className="bg-primary/10 p-3 rounded-full mt-1">
+                              <CalendarIcon className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-lg">{interview.cvs?.applicant_name || "Candidate"}</h3>
+                                {getStatusBadge(interview.status || 'scheduled')}
+                              </div>
+                              <p className="text-sm text-gray-500">
+                                {cv?.current_job_title || "Applicant"} • {cv?.years_experience} years
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {cv?.skills && cv.skills.slice(0, 3).map((skill, index) => (
+                                  <Badge key={index} variant="secondary" className="text-xs">
+                                    {skill}
+                                  </Badge>
+                                ))}
+                                {cv?.skills && cv.skills.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{cv.skills.length - 3} more
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="mt-2 text-sm">
+                                <span className="font-medium">Interview:</span>{" "}
+                                {format(new Date(interview.scheduled_at), "PPP 'at' p")}
+                              </p>
+                              {interview.status === "confirmed" && (
+                                <p className="mt-1 text-sm text-green-600 font-medium">
+                                  Candidate has accepted this interview
+                                </p>
+                              )}
+                              {interview.status === "declined" && (
+                                <p className="mt-1 text-sm text-red-600 font-medium">
+                                  Candidate has declined this interview
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {interview.status !== "declined" && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    Reschedule
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                  <div className="p-4">
+                                    <div className="mb-4">
+                                      <label className="block text-sm font-medium mb-2">
+                                        Select Date
+                                      </label>
+                                      <Calendar
+                                        mode="single"
+                                        selected={selectedDate}
+                                        onSelect={(date) => {
+                                          setSelectedDate(date);
+                                          setSelectedCvId(interview.cv_id || null);
+                                        }}
+                                        disabled={(date) =>
+                                          date < new Date(new Date().setHours(0, 0, 0, 0))
+                                        }
+                                        initialFocus
+                                        className="pointer-events-auto"
+                                      />
+                                    </div>
+                                    
+                                    <div className="mb-4">
+                                      <label className="block text-sm font-medium mb-2">
+                                        Select Time
+                                      </label>
+                                      <Select 
+                                        value={selectedTime} 
+                                        onValueChange={setSelectedTime}
+                                      >
+                                        <SelectTrigger className="w-full">
+                                          <SelectValue placeholder="Select a time">
+                                            {selectedTime || <div className="flex items-center"><Clock className="mr-2 h-4 w-4" /> Select time</div>}
+                                          </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {timeSlots.map((time) => (
+                                            <SelectItem key={time} value={time}>
+                                              {time}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    
+                                    <div className="flex justify-end mt-4">
+                                      <Button 
+                                        size="sm" 
+                                        onClick={handleUpdateInterviewDate}
+                                        disabled={!selectedDate || !selectedTime || !selectedCvId || isUpdatingInterview}
+                                      >
+                                        Reschedule Interview
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                            
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  Send Message
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80" align="end">
+                                <div className="space-y-4">
+                                  <h4 className="font-medium">Send Message to {interview.cvs?.applicant_name}</h4>
+                                  <Input
+                                    placeholder="Type your message here..."
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                  />
+                                  <div className="flex justify-end">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => handleSendMessage(interview.cv_id || '')}
+                                      disabled={!message.trim() || isSendingMessage || !interview.cv_id}
+                                    >
+                                      Send
+                                    </Button>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+
+                            {interview.cv_id && (
+                              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/cv/${interview.cv_id}`)}>
+                                View CV <ChevronRight className="ml-2 h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                <div className="text-center p-8 bg-white rounded-lg">
+                  <p className="text-gray-500">No scheduled interviews yet</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
 
           <TabsContent value="accepted">
             <div className="grid grid-cols-1 gap-4">
@@ -377,10 +548,22 @@ const MessagesInterviewsPage = () => {
                                 )}
                               </div>
                               {interview && (
-                                <p className="mt-2 text-sm">
-                                  <span className="font-medium">Interview:</span>{" "}
-                                  {format(new Date(interview.scheduled_at), "PPP 'at' p")}
-                                </p>
+                                <div className="mt-2">
+                                  <p className="text-sm">
+                                    <span className="font-medium">Interview:</span>{" "}
+                                    {format(new Date(interview.scheduled_at), "PPP 'at' p")}
+                                  </p>
+                                  {interview.status === "confirmed" && (
+                                    <p className="mt-1 text-sm text-green-600 font-medium">
+                                      Interview accepted
+                                    </p>
+                                  )}
+                                  {interview.status === "declined" && (
+                                    <p className="mt-1 text-sm text-red-600 font-medium">
+                                      Interview declined
+                                    </p>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
