@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Clock, Check, X, RefreshCw } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,48 +54,51 @@ const InterviewCard = ({ interview, onStatusChange }: {
           </div>
           <div className="text-right">
             <div className="flex space-x-2 mt-3 justify-end">
-              {isDeclined ? (
+              {!isDeclined && (
                 <Button 
                   size="sm" 
-                  variant="default" 
-                  className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
+                  variant="outline" 
+                  className={`flex items-center gap-1 ${
+                    isConfirmed 
+                      ? "bg-green-50 text-green-700 hover:bg-green-100 border-green-200" 
+                      : "bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                  }`}
                   onClick={() => onStatusChange(interview.id, "confirmed")}
+                  disabled={isConfirmed}
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  Change to Accept
+                  <Check className="h-4 w-4" />
+                  {isConfirmed ? "Accepted" : "Accept"}
                 </Button>
-              ) : isConfirmed ? (
+              )}
+              
+              {!isConfirmed && (
                 <Button 
                   size="sm" 
-                  variant="destructive" 
-                  className="flex items-center gap-1"
+                  variant="outline" 
+                  className={`flex items-center gap-1 ${
+                    isDeclined 
+                      ? "bg-red-50 text-red-700 hover:bg-red-100 border-red-200" 
+                      : "bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                  }`}
+                  onClick={() => onStatusChange(interview.id, "declined")}
+                  disabled={isDeclined}
+                >
+                  <X className="h-4 w-4" />
+                  {isDeclined ? "Declined" : "Decline"}
+                </Button>
+              )}
+              
+              {/* Always show option to decline even if accepted */}
+              {isConfirmed && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex items-center gap-1 bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
                   onClick={() => onStatusChange(interview.id, "declined")}
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  Change to Decline
+                  <X className="h-4 w-4" />
+                  Decline
                 </Button>
-              ) : (
-                <>
-                  <Button 
-                    size="sm" 
-                    variant="default" 
-                    className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => onStatusChange(interview.id, "confirmed")}
-                  >
-                    <Check className="h-4 w-4" />
-                    Accept
-                  </Button>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    className="flex items-center gap-1"
-                    onClick={() => onStatusChange(interview.id, "declined")}
-                  >
-                    <X className="h-4 w-4" />
-                    Decline
-                  </Button>
-                </>
               )}
             </div>
             
@@ -121,6 +124,7 @@ const InterviewTab = () => {
     if (userError) throw userError;
     if (!user) throw new Error("No user found");
 
+    // Find the CV associated with this user
     const { data: cv, error: cvError } = await supabase
       .from("cvs")
       .select("id")
@@ -130,6 +134,7 @@ const InterviewTab = () => {
     if (cvError) throw cvError;
     if (!cv) return [];
 
+    // Get all interviews for this CV
     const { data: interviews, error: interviewsError } = await supabase
       .from("interviews")
       .select("*")
@@ -156,15 +161,6 @@ const InterviewTab = () => {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
-      queryClient.invalidateQueries({ queryKey: ["upcomingInterviews"] });
-      
-      if (data && data.length > 0 && (variables.status === "confirmed" || variables.status === "declined")) {
-        const interviewData = data[0];
-        if (interviewData && interviewData.cv_id) {
-          createInterviewStatusMessage(interviewData.cv_id, variables.status, interviewData.scheduled_at);
-        }
-      }
-      
       toast({
         title: variables.status === "confirmed" ? "Interview accepted" : "Interview declined",
         description: variables.status === "confirmed" ? 
@@ -182,29 +178,6 @@ const InterviewTab = () => {
     },
   });
 
-  const createInterviewStatusMessage = async (cvId: string, status: string, scheduledAt: string) => {
-    try {
-      const formattedDate = format(new Date(scheduledAt), 'MMMM do, yyyy at h:mm a');
-      const messageText = status === "confirmed" 
-        ? `Interview on ${formattedDate} has been accepted by the candidate.`
-        : `Interview on ${formattedDate} has been declined by the candidate.`;
-      
-      const { error } = await supabase
-        .from('messages')
-        .insert([{ 
-          cv_id: cvId, 
-          message: messageText,
-          read: false 
-        }]);
-      
-      if (error) {
-        console.error("Error creating status message:", error);
-      }
-    } catch (error) {
-      console.error("Error creating status message:", error);
-    }
-  };
-
   const handleStatusChange = (id: string, status: string) => {
     updateInterviewStatus.mutate({ id, status });
   };
@@ -220,9 +193,10 @@ const InterviewTab = () => {
     queryFn: fetchUserInterviews,
   });
 
+  // Force refetch to see changes immediately
   useEffect(() => {
     const channel = supabase
-      .channel('interview-updates')
+      .channel('table-db-changes')
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
@@ -264,14 +238,17 @@ const InterviewTab = () => {
     return interviewDate >= new Date();
   });
 
+  // Create an array of dates where interviews are scheduled
   const interviewDates = interviews?.map(interview => {
     const date = new Date(interview.scheduled_at);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }) || [];
 
+  // Create a unique set of dates (to avoid duplicates)
   const uniqueInterviewDates = [...new Set(interviewDates.map(date => date.toDateString()))]
     .map(dateString => new Date(dateString));
 
+  // Function to style the dates with interviews
   const isDayWithInterview = (date: Date) => {
     return uniqueInterviewDates.some(interviewDate => 
       interviewDate.toDateString() === date.toDateString()
@@ -296,6 +273,7 @@ const InterviewTab = () => {
                 onSelect={setSelectedDate}
                 className="rounded-md border bg-background"
                 disabled={(date) => {
+                  // Disable past dates
                   return date < new Date(new Date().setHours(0, 0, 0, 0));
                 }}
                 modifiers={{

@@ -6,29 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
-import { useEffect } from "react";
 
 const Messages = () => {
   const queryClient = useQueryClient();
-
-  // Set up realtime subscription to update messages when new ones arrive
-  useEffect(() => {
-    const channel = supabase
-      .channel('messages-realtime')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ['messages'] });
-        queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   const { data: messages, isLoading, isError, error } = useQuery({
     queryKey: ['messages'],
@@ -119,44 +99,6 @@ const Messages = () => {
         </div>
       );
     }
-    
-    // Highlight accepted/declined status updates
-    if (message.includes("has been accepted by the candidate")) {
-      return (
-        <div>
-          {message.split("has been accepted by the candidate").map((part, index) => {
-            if (index === 0) {
-              return <span key={index}>{part}</span>;
-            }
-            return (
-              <span key={index}>
-                <span className="font-bold text-green-600">has been accepted by the candidate</span>
-                {part}
-              </span>
-            );
-          })}
-        </div>
-      );
-    }
-    
-    if (message.includes("has been declined by the candidate")) {
-      return (
-        <div>
-          {message.split("has been declined by the candidate").map((part, index) => {
-            if (index === 0) {
-              return <span key={index}>{part}</span>;
-            }
-            return (
-              <span key={index}>
-                <span className="font-bold text-red-600">has been declined by the candidate</span>
-                {part}
-              </span>
-            );
-          })}
-        </div>
-      );
-    }
-    
     return message;
   };
 
