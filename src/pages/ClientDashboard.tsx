@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -53,6 +54,38 @@ const ClientDashboard = () => {
     };
   }, [navigate, toast]);
 
+  // Set up realtime subscription for interview updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('cv-dashboard-updates')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'interviews'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['upcomingInterviews'] });
+        queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });
+      })
+      .subscribe();
+
+    // Also listen for message changes
+    const messagesChannel = supabase
+      .channel('cv-messages-updates')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [queryClient]);
+
   const { data: existingCV, isLoading, error: cvError } = useQuery({
     queryKey: ['userCV'],
     queryFn: async () => {
@@ -81,7 +114,7 @@ const ClientDashboard = () => {
     enabled: authCheckComplete,
   });
 
-  const { data: unreadMessagesCount } = useQuery({
+  const { data: unreadMessagesCount, refetch: refetchUnreadMessages } = useQuery({
     queryKey: ['unreadMessages'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -108,7 +141,7 @@ const ClientDashboard = () => {
     enabled: !!existingCV,
   });
 
-  const { data: upcomingInterviews } = useQuery({
+  const { data: upcomingInterviews, refetch: refetchUpcomingInterviews } = useQuery({
     queryKey: ['upcomingInterviews'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -134,6 +167,18 @@ const ClientDashboard = () => {
     },
     enabled: !!existingCV,
   });
+
+  // Periodically check for updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (existingCV) {
+        refetchUnreadMessages();
+        refetchUpcomingInterviews();
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [existingCV, refetchUnreadMessages, refetchUpcomingInterviews]);
 
   const handleThemeChange = async (theme: string) => {
     if (!existingCV) return;

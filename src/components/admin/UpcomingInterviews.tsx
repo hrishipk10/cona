@@ -6,6 +6,9 @@ import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
 
@@ -15,6 +18,38 @@ interface UpcomingInterviewsProps {
 
 export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Set up Supabase realtime subscription to update admin UI when interview statuses change
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-interview-updates')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'interviews'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['interviews'] });
+      })
+      .subscribe();
+
+    // Also listen for new messages
+    const messagesChannel = supabase
+      .channel('admin-messages-updates')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [queryClient]);
 
   const upcomingInterviews = interviews 
     ? [...interviews]

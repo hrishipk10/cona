@@ -57,10 +57,10 @@ const InterviewCard = ({ interview, onStatusChange }: {
               {!isDeclined && (
                 <Button 
                   size="sm" 
-                  variant="outline" 
+                  variant={isConfirmed ? "default" : "outline"} 
                   className={`flex items-center gap-1 ${
                     isConfirmed 
-                      ? "bg-green-50 text-green-700 hover:bg-green-100 border-green-200" 
+                      ? "bg-green-600 hover:bg-green-700 text-white" 
                       : "bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
                   }`}
                   onClick={() => onStatusChange(interview.id, "confirmed")}
@@ -74,10 +74,10 @@ const InterviewCard = ({ interview, onStatusChange }: {
               {!isConfirmed && (
                 <Button 
                   size="sm" 
-                  variant="outline" 
+                  variant={isDeclined ? "default" : "outline"} 
                   className={`flex items-center gap-1 ${
                     isDeclined 
-                      ? "bg-red-50 text-red-700 hover:bg-red-100 border-red-200" 
+                      ? "bg-red-600 hover:bg-red-700 text-white" 
                       : "bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
                   }`}
                   onClick={() => onStatusChange(interview.id, "declined")}
@@ -160,7 +160,17 @@ const InterviewTab = () => {
       return data;
     },
     onSuccess: (data, variables) => {
+      // Invalidate and refetch interviews to update UI
       queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
+      
+      // Also invalidate upcomingInterviews count displayed on the dashboard
+      queryClient.invalidateQueries({ queryKey: ["upcomingInterviews"] });
+      
+      // Create a message to notify recruiters
+      if (variables.status === "confirmed" || variables.status === "declined") {
+        createInterviewStatusMessage(data[0].cv_id, variables.status, data[0].scheduled_at);
+      }
+      
       toast({
         title: variables.status === "confirmed" ? "Interview accepted" : "Interview declined",
         description: variables.status === "confirmed" ? 
@@ -178,6 +188,30 @@ const InterviewTab = () => {
     },
   });
 
+  // Function to create a message in the database when interview status changes
+  const createInterviewStatusMessage = async (cvId: string, status: string, scheduledAt: string) => {
+    try {
+      const formattedDate = format(new Date(scheduledAt), 'MMMM do, yyyy at h:mm a');
+      const messageText = status === "confirmed" 
+        ? `Interview on ${formattedDate} has been accepted by the candidate.`
+        : `Interview on ${formattedDate} has been declined by the candidate.`;
+      
+      const { error } = await supabase
+        .from('messages')
+        .insert([{ 
+          cv_id: cvId, 
+          message: messageText,
+          read: false 
+        }]);
+      
+      if (error) {
+        console.error("Error creating status message:", error);
+      }
+    } catch (error) {
+      console.error("Error creating status message:", error);
+    }
+  };
+
   const handleStatusChange = (id: string, status: string) => {
     updateInterviewStatus.mutate({ id, status });
   };
@@ -193,10 +227,10 @@ const InterviewTab = () => {
     queryFn: fetchUserInterviews,
   });
 
-  // Force refetch to see changes immediately
+  // Force refetch to see changes immediately and set up real-time subscription
   useEffect(() => {
     const channel = supabase
-      .channel('table-db-changes')
+      .channel('interview-updates')
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
