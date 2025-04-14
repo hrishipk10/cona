@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { format, parseISO } from 'date-fns';
@@ -11,8 +10,16 @@ import { Calendar as CalendarIcon, Clock, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+type InterviewType = {
+  id: string;
+  scheduled_at: string;
+  status: string;
+  feedback?: string;
+  // … other properties if needed
+};
+
 const InterviewCard = ({ interview, onStatusChange }: { 
-  interview: any; 
+  interview: InterviewType; 
   onStatusChange: (id: string, status: string) => void;
 }) => {
   const isConfirmed = interview.status === "confirmed";
@@ -124,7 +131,7 @@ const InterviewTab = () => {
     if (userError) throw userError;
     if (!user) throw new Error("No user found");
 
-    // Find the CV associated with this user
+    // Get the CV associated with this user
     const { data: cv, error: cvError } = await supabase
       .from("cvs")
       .select("id")
@@ -159,6 +166,26 @@ const InterviewTab = () => {
       if (error) throw error;
       return data;
     },
+    // Optimistically update local cache to immediately reflect the new status
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ["userInterviews"] });
+      const previousInterviews = queryClient.getQueryData<any[]>(["userInterviews"]);
+      queryClient.setQueryData(["userInterviews"], (oldInterviews: any[] | undefined) => {
+        return oldInterviews?.map(interview =>
+          interview.id === id ? { ...interview, status } : interview
+        );
+      });
+      return { previousInterviews };
+    },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(["userInterviews"], context?.previousInterviews);
+      console.error("Failed to update interview:", error);
+      toast({
+        title: "Failed to update",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
       toast({
@@ -166,14 +193,6 @@ const InterviewTab = () => {
         description: variables.status === "confirmed" ? 
           "You have successfully accepted this interview." : 
           "You have declined this interview opportunity.",
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to update interview:", error);
-      toast({
-        title: "Failed to update",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
       });
     },
   });
@@ -193,7 +212,7 @@ const InterviewTab = () => {
     queryFn: fetchUserInterviews,
   });
 
-  // Force refetch to see changes immediately
+  // Subscribe to real-time updates so UI changes immediately on database updates
   useEffect(() => {
     const channel = supabase
       .channel('table-db-changes')
@@ -227,28 +246,28 @@ const InterviewTab = () => {
     );
   }
 
-  const interviewsByDate = interviews?.filter((interview) => {
+  const interviewsByDate = interviews?.filter((interview: InterviewType) => {
     if (!selectedDate) return false;
     const interviewDate = new Date(interview.scheduled_at).toDateString();
     return interviewDate === selectedDate.toDateString();
   });
 
-  const upcomingInterviews = interviews?.filter((interview) => {
+  const upcomingInterviews = interviews?.filter((interview: InterviewType) => {
     const interviewDate = new Date(interview.scheduled_at);
     return interviewDate >= new Date();
   });
 
-  // Create an array of dates where interviews are scheduled
+  // Create an array of dates with interviews
   const interviewDates = interviews?.map(interview => {
     const date = new Date(interview.scheduled_at);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }) || [];
 
-  // Create a unique set of dates (to avoid duplicates)
+  // Remove duplicates
   const uniqueInterviewDates = [...new Set(interviewDates.map(date => date.toDateString()))]
     .map(dateString => new Date(dateString));
 
-  // Function to style the dates with interviews
+  // Mark dates that have an interview
   const isDayWithInterview = (date: Date) => {
     return uniqueInterviewDates.some(interviewDate => 
       interviewDate.toDateString() === date.toDateString()
@@ -272,16 +291,9 @@ const InterviewTab = () => {
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md border bg-background"
-                disabled={(date) => {
-                  // Disable past dates
-                  return date < new Date(new Date().setHours(0, 0, 0, 0));
-                }}
-                modifiers={{
-                  interview: (date) => isDayWithInterview(date),
-                }}
-                modifiersClassNames={{
-                  interview: "bg-primary/20 font-bold text-primary rounded-md",
-                }}
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                modifiers={{ interview: (date) => isDayWithInterview(date) }}
+                modifiersClassNames={{ interview: "bg-primary/20 font-bold text-primary rounded-md" }}
               />
               <div className="mt-2 flex items-center justify-center text-sm">
                 <div className="w-3 h-3 bg-primary/20 rounded-full mr-2"></div>
@@ -290,7 +302,7 @@ const InterviewTab = () => {
             </div>
             <div className="md:w-2/3 mt-6 md:mt-0 space-y-4">
               {interviewsByDate && interviewsByDate.length > 0 ? (
-                interviewsByDate.map((interview) => (
+                interviewsByDate.map((interview: InterviewType) => (
                   <InterviewCard 
                     key={interview.id} 
                     interview={interview} 

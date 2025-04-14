@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,11 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, ArrowUpDown, Search, Filter, Sliders, X, Code, Briefcase, Eye 
 } from "lucide-react";
 
-// Updated ScoringConfig with old code fields.
 interface ScoringConfig {
   skillsWeight: number;
   experienceWeight: number;
@@ -32,7 +32,21 @@ type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "scor
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "pending" | "accepted" | "rejected";
 
-// Programming languages and job positions remain unchanged.
+interface CV {
+  id: string;
+  applicant_name: string;
+  email?: string;
+  avatar_url?: string;
+  years_experience: number;
+  skills: string[];
+  current_job_title?: string;
+  status: string;
+  _score?: number;
+  rating?: number; // Added the missing 'rating' property
+  application_date: string;
+  [key: string]: any;
+}
+
 const programmingLanguages = [
   "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Ruby", "Swift", 
   "Go", "Rust", "PHP", "Kotlin", "Dart", "R", "SQL", "HTML", "CSS", "Shell",
@@ -48,13 +62,12 @@ const jobPositions = [
   "Software Architect", "CTO", "IT Manager"
 ];
 
-type CV = any;
-
 const SortingPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
 
-  // -- Filtering state --
+  // Filtering state
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -62,15 +75,15 @@ const SortingPage = () => {
   const [maxExperience, setMaxExperience] = useState<number>(30);
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  // -- Sorting state --
+  // Sorting state
   const [sortCriteria, setSortCriteria] = useState<SortCriteria>("score");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  // -- Languages and positions filters --
+  // Languages and positions filters
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
 
-  // -- Scoring configuration state using old defaults --
+  // Scoring configuration
   const [scoringConfig, setScoringConfig] = useState<ScoringConfig>({
     skillsWeight: 2,
     experienceWeight: 5,
@@ -94,7 +107,7 @@ const SortingPage = () => {
     },
   });
 
-  // --- Helper functions for filters ---
+  // Helper functions
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev =>
       prev.includes(skill)
@@ -133,7 +146,6 @@ const SortingPage = () => {
     });
   };
 
-  // --- Scoring configuration panel actions ---
   const resetScoringConfig = () => {
     setScoringConfig({
       skillsWeight: 2,
@@ -157,7 +169,7 @@ const SortingPage = () => {
     setShowScoringConfig(false);
   };
 
-  // --- Filtering helpers ---
+  // Filtering and scoring logic
   const matchesSearchQuery = (cv: CV): boolean => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -195,7 +207,6 @@ const SortingPage = () => {
     return hasInTitle || hasInExperience || hasInGoals;
   };
 
-  // --- Scoring function using old code’s logic ---
   const scoreCVs = (cvList: CV[]) => {
     return cvList.map(cv => {
       const skillsScore = (cv.skills?.length || 0) * scoringConfig.skillsWeight;
@@ -215,8 +226,7 @@ const SortingPage = () => {
     });
   };
 
-  // --- Filter and sort CVs ---
-  const filteredAndSortedCVs = () => {
+  const filteredAndSortedCVs = useMemo(() => {
     if (!cvs) return [];
     const scoredCVs = scoreCVs(
       cvs.filter(cv => {
@@ -260,9 +270,12 @@ const SortingPage = () => {
             : b._score - a._score;
       }
     });
-  };
+  }, [
+    cvs, statusFilter, searchQuery, minExperience, maxExperience,
+    selectedSkills, selectedLanguages, selectedPositions,
+    sortCriteria, sortOrder, scoringConfig
+  ]);
 
-  // --- Logout ---
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
@@ -289,8 +302,6 @@ const SortingPage = () => {
       </div>
     );
   }
-
-  const filteredCVList = filteredAndSortedCVs();
 
   return (
     <div className="bg-primary relative md:flex flex-col items-center justify-center p-8 min-h-screen">
@@ -345,7 +356,6 @@ const SortingPage = () => {
                 </div>
               </div>
 
-              {/* -- Scoring Config Panel from old code -- */}
               {showScoringConfig && (
                 <div className="border rounded-lg p-4 mt-4 space-y-4 bg-white/30">
                   <div className="flex justify-between items-center">
@@ -474,7 +484,8 @@ const SortingPage = () => {
                   </div>
                 </div>
               )}
-<div className="flex flex-wrap gap-2 mt-4">
+
+              <div className="flex flex-wrap gap-2 mt-4">
                 <div className="flex items-center gap-1">
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="text-sm">Sort by:</span>
@@ -524,10 +535,9 @@ const SortingPage = () => {
                   >
                     Date {sortCriteria === "date" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Button>
-                  
                 </div>
               </div>
-              {/* -- Filters Panel (similar to current code) -- */}
+
               {showFilters && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-4 mt-4 bg-gray-50 rounded-lg">
                   <div>
@@ -715,8 +725,19 @@ const SortingPage = () => {
           </Card>
         </div>
 
-        {/* Table of CVs */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Table of CVs with the new pending toggle */}
+        <div className="bg-white rounded-lg shadow overflow-hidden mt-4">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <h3 className="font-semibold text-lg">Applications</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Only show pending</span>
+              <Switch
+                checked={showOnlyPending}
+                onCheckedChange={setShowOnlyPending}
+              />
+            </div>
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -730,75 +751,83 @@ const SortingPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCVList.length === 0 ? (
+              {filteredAndSortedCVs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No CVs match your current filters
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCVList.map(cv => (
-                  <TableRow key={cv.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          {cv.avatar_url ? (
-                            <AvatarImage src={cv.avatar_url} alt={cv.applicant_name} />
-                          ) : (
-                            <AvatarFallback>{cv.applicant_name.charAt(0)}</AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{cv.applicant_name}</p>
-                          {cv.email && <p className="text-xs text-muted-foreground">{cv.email}</p>}
+                filteredAndSortedCVs
+                  .filter(cv => !showOnlyPending || cv.status === "pending")
+                  .map((cv) => (
+                    <TableRow key={cv.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            {cv.avatar_url ? (
+                              <AvatarImage src={cv.avatar_url} alt={cv.applicant_name} />
+                            ) : (
+                              <AvatarFallback>{cv.applicant_name.charAt(0)}</AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{cv.applicant_name}</p>
+                            {cv.email && (
+                              <p className="text-xs text-muted-foreground">{cv.email}</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{cv.years_experience} years</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {cv.skills.slice(0, 3).map((skill, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {cv.skills.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{cv.skills.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{cv.current_job_title || "N/A"}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={
-                          cv.status === "accepted" ? "default" : 
-                          cv.status === "rejected" ? "destructive" : 
-                          "secondary"
-                        }
-                      >
-                        {cv.status ? cv.status.charAt(0).toUpperCase() + cv.status.slice(1) : "Pending"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-medium">
-                        {cv._score ? cv._score.toFixed(0) : "N/A"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => navigate(`/admin/cv/${cv.id}`)}
-                        className="space-x-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span>View</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell>{cv.years_experience} years</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {cv.skills?.slice(0, 3).map((skill, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {skill}
+                            </Badge>
+                          ))}
+                          {cv.skills?.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{cv.skills.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{cv.current_job_title || "N/A"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            cv.status === "accepted"
+                              ? "default"
+                              : cv.status === "rejected"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {cv.status
+                            ? cv.status.charAt(0).toUpperCase() + cv.status.slice(1)
+                            : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-medium">
+                          {cv._score ? cv._score.toFixed(0) : "N/A"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/admin/cv/${cv.id}`)}
+                          className="space-x-1"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>View</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
               )}
             </TableBody>
           </Table>

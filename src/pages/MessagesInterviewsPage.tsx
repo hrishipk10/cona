@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { LogOut, ChevronRight, Clock, Check, X, Calendar as CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { format, parse, setHours, setMinutes } from "date-fns";
+import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,16 +20,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DashboardHeader } from "@/components/admin/DashboardHeader";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
-type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
+type Interview = (Database["public"]["Tables"]["interviews"]["Row"] & { 
+  cvs?: { applicant_name: string } 
+});
 
-// Generate time slots from 9:00 AM to 6:00 PM in 30-minute intervals
 const generateTimeSlots = () => {
   const timeSlots = [];
   for (let hour = 9; hour <= 18; hour++) {
     for (let minute of [0, 30]) {
-      // Skip 6:30 PM
       if (hour === 18 && minute === 30) continue;
-      
       const period = hour >= 12 ? 'PM' : 'AM';
       const displayHour = hour > 12 ? hour - 12 : hour;
       const formattedHour = displayHour === 0 ? 12 : displayHour;
@@ -53,6 +51,7 @@ const MessagesInterviewsPage = () => {
   
   const timeSlots = generateTimeSlots();
 
+  // Fetch company settings
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => {
@@ -66,10 +65,11 @@ const MessagesInterviewsPage = () => {
         throw error;
       }
       
-      return data || { company_name: "Cona" }; // Default if no settings found
+      return data || { company_name: "Cona" };
     },
   });
 
+  // Fetch all CVs
   const { data: cvs, isLoading: cvsLoading } = useQuery({
     queryKey: ["cvs"],
     queryFn: async () => {
@@ -88,6 +88,7 @@ const MessagesInterviewsPage = () => {
     },
   });
 
+  // Fetch all interviews
   const { data: interviews, isLoading: interviewsLoading } = useQuery({
     queryKey: ["interviews"],
     queryFn: async () => {
@@ -101,6 +102,7 @@ const MessagesInterviewsPage = () => {
     },
   });
 
+  // Mutation for sending messages
   const { mutate: sendMessage, isPending: isSendingMessage } = useMutation({
     mutationFn: async (data: { cv_id: string; message: string }) => {
       console.log("Sending message with cv_id:", data.cv_id);
@@ -128,7 +130,7 @@ const MessagesInterviewsPage = () => {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: `Failed to send message: ${error.message}`,
@@ -137,9 +139,9 @@ const MessagesInterviewsPage = () => {
     },
   });
 
+  // Mutation for scheduling/rescheduling an interview
   const { mutate: updateInterviewDate, isPending: isUpdatingInterview } = useMutation({
     mutationFn: async (data: { cv_id: string; date: Date; time: string }) => {
-      // Get the current user's ID to set as recruiter_id
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("User not authenticated");
@@ -158,8 +160,7 @@ const MessagesInterviewsPage = () => {
 
       console.log("Existing interview check result:", existingInterview);
 
-      // Parse the time string correctly
-      // Example format: "2:30 PM"
+      // Parse the selected time string (e.g., "2:30 PM")
       const timeRegex = /^(\d{1,2}):(\d{2})\s(AM|PM)$/;
       const match = data.time.match(timeRegex);
       
@@ -171,16 +172,13 @@ const MessagesInterviewsPage = () => {
       const minutes = parseInt(match[2]);
       const period = match[3];
       
-      // Convert hours to 24-hour format
       if (period === 'PM' && hours !== 12) {
         hours += 12;
       } else if (period === 'AM' && hours === 12) {
         hours = 0;
       }
       
-      // Create a new date object from the selected date
       const scheduledDate = new Date(data.date);
-      // Set the hours and minutes
       scheduledDate.setHours(hours, minutes, 0, 0);
       
       console.log("Scheduled date with time:", scheduledDate);
@@ -221,7 +219,6 @@ const MessagesInterviewsPage = () => {
         }
       }
 
-      // Get the CV to use the applicant name in the message
       const { data: cv, error: cvError } = await supabase
         .from("cvs")
         .select("applicant_name")
@@ -234,10 +231,8 @@ const MessagesInterviewsPage = () => {
       }
 
       const companyName = settings?.company_name || "Cona";
-      
-      // Send a notification message about the interview to the applicant
-      const interview = existingInterview ? "rescheduled" : "scheduled";
-      const interviewMessage = `Hello ${cv.applicant_name}, your interview with ${companyName} has been ${interview} for ${format(scheduledDate, "EEEE, MMMM do, yyyy")} at ${data.time}. Please make sure you're available at this time.`;
+      const interviewType = existingInterview ? "rescheduled" : "scheduled";
+      const interviewMessage = `Hello ${cv.applicant_name}, your interview with ${companyName} has been ${interviewType} for ${format(scheduledDate, "EEEE, MMMM do, yyyy")} at ${data.time}. Please make sure you're available at this time.`;
       
       const { error: messageError } = await supabase
         .from("messages")
@@ -267,7 +262,7 @@ const MessagesInterviewsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["interviews"] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to schedule interview:", error);
       toast({
         title: "Error",
@@ -277,6 +272,7 @@ const MessagesInterviewsPage = () => {
     },
   });
 
+  // Separate CV filters based on their statuses
   const acceptedCvs = cvs?.filter(cv => cv.status === "accepted") || [];
   const rejectedCvs = cvs?.filter(cv => cv.status === "rejected") || [];
   
@@ -354,6 +350,7 @@ const MessagesInterviewsPage = () => {
             <TabsTrigger value="rejected">Rejected CVs</TabsTrigger>
           </TabsList>
 
+          {/* Interviews Tab */}
           <TabsContent value="interviews">
             <div className="grid grid-cols-1 gap-4">
               {scheduledInterviews.length > 0 ? (
@@ -436,10 +433,7 @@ const MessagesInterviewsPage = () => {
                                       <label className="block text-sm font-medium mb-2">
                                         Select Time
                                       </label>
-                                      <Select 
-                                        value={selectedTime} 
-                                        onValueChange={setSelectedTime}
-                                      >
+                                      <Select value={selectedTime} onValueChange={setSelectedTime}>
                                         <SelectTrigger className="w-full">
                                           <SelectValue placeholder="Select a time">
                                             {selectedTime || <div className="flex items-center"><Clock className="mr-2 h-4 w-4" /> Select time</div>}
@@ -515,6 +509,7 @@ const MessagesInterviewsPage = () => {
             </div>
           </TabsContent>
 
+          {/* Accepted CVs Tab */}
           <TabsContent value="accepted">
             <div className="grid grid-cols-1 gap-4">
               {acceptedCvs.length > 0 ? (
@@ -599,10 +594,7 @@ const MessagesInterviewsPage = () => {
                                     <label className="block text-sm font-medium mb-2">
                                       Select Time
                                     </label>
-                                    <Select 
-                                      value={selectedTime} 
-                                      onValueChange={setSelectedTime}
-                                    >
+                                    <Select value={selectedTime} onValueChange={setSelectedTime}>
                                       <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select a time">
                                           {selectedTime || <div className="flex items-center"><Clock className="mr-2 h-4 w-4" /> Select time</div>}
@@ -675,6 +667,7 @@ const MessagesInterviewsPage = () => {
             </div>
           </TabsContent>
 
+          {/* Rejected CVs Tab */}
           <TabsContent value="rejected">
             <div className="grid grid-cols-1 gap-4">
               {rejectedCvs.length > 0 ? (

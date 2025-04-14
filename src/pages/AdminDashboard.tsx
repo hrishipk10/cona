@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +11,8 @@ import { StatsOverview } from "@/components/admin/StatsOverview";
 import { TopPerformers } from "@/components/admin/TopPerformers";
 import { RecentApplications } from "@/components/admin/RecentApplications";
 import { UpcomingInterviews } from "@/components/admin/UpcomingInterviews";
+import { JobManagement } from "@/components/admin/JobManagement";
+
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -97,7 +98,9 @@ const AdminDashboard = () => {
           <DashboardHeader />
           <StatsOverview cvs={cvs} />
         </div>
-
+        <div className="mb-6">
+          <JobManagement />
+        </div>
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2 space-y-6">
             <div className="bg-secondary backdrop-blur rounded-xl p-6">
