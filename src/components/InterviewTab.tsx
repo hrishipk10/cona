@@ -166,8 +166,8 @@ const InterviewTab = () => {
       // Also invalidate upcomingInterviews count displayed on the dashboard
       queryClient.invalidateQueries({ queryKey: ["upcomingInterviews"] });
       
-      // Create a message to notify recruiters
-      if (variables.status === "confirmed" || variables.status === "declined") {
+      // Create a message to notify recruiters - Fix: Check if data exists and has elements
+      if (data && data.length > 0 && (variables.status === "confirmed" || variables.status === "declined")) {
         createInterviewStatusMessage(data[0].cv_id, variables.status, data[0].scheduled_at);
       }
       
