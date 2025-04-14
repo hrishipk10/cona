@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { format, parseISO } from 'date-fns';
@@ -64,10 +63,17 @@ const InterviewCard = ({ interview, onStatusChange }: {
                       : "bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
                   }`}
                   onClick={() => onStatusChange(interview.id, "confirmed")}
-                  disabled={isConfirmed}
+                  disabled={isConfirmed || updateInterviewStatus.isPending}
                 >
-                  <Check className="h-4 w-4" />
-                  {isConfirmed ? "Accepted" : "Accept"}
+                  {updateInterviewStatus.variables?.id === interview.id && 
+                  updateInterviewStatus.isPending ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  {isConfirmed ? "Accepted" : 
+                   (updateInterviewStatus.variables?.id === interview.id && 
+                    updateInterviewStatus.isPending) ? "Accepting..." : "Accept"}
                 </Button>
               )}
               
@@ -81,14 +87,20 @@ const InterviewCard = ({ interview, onStatusChange }: {
                       : "bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
                   }`}
                   onClick={() => onStatusChange(interview.id, "declined")}
-                  disabled={isDeclined}
+                  disabled={isDeclined || updateInterviewStatus.isPending}
                 >
-                  <X className="h-4 w-4" />
-                  {isDeclined ? "Declined" : "Decline"}
+                  {updateInterviewStatus.variables?.id === interview.id && 
+                  updateInterviewStatus.isPending ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                  {isDeclined ? "Declined" : 
+                   (updateInterviewStatus.variables?.id === interview.id && 
+                    updateInterviewStatus.isPending) ? "Declining..." : "Decline"}
                 </Button>
               )}
               
-              {/* Always show option to decline even if accepted */}
               {isConfirmed && (
                 <Button 
                   size="sm" 
@@ -124,7 +136,6 @@ const InterviewTab = () => {
     if (userError) throw userError;
     if (!user) throw new Error("No user found");
 
-    // Find the CV associated with this user
     const { data: cv, error: cvError } = await supabase
       .from("cvs")
       .select("id")
@@ -134,7 +145,6 @@ const InterviewTab = () => {
     if (cvError) throw cvError;
     if (!cv) return [];
 
-    // Get all interviews for this CV
     const { data: interviews, error: interviewsError } = await supabase
       .from("interviews")
       .select("*")
@@ -159,6 +169,27 @@ const InterviewTab = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ["userInterviews"] });
+      const previousInterviews = queryClient.getQueryData(["userInterviews"]);
+      
+      queryClient.setQueryData(["userInterviews"], (old: any[]) => 
+        old?.map(interview => 
+          interview.id === id ? { ...interview, status } : interview
+        ) || []
+      );
+      
+      return { previousInterviews };
+    },
+    onError: (error, variables, context) => {
+      console.error("Failed to update interview:", error);
+      queryClient.setQueryData(["userInterviews"], context?.previousInterviews);
+      toast({
+        title: "Failed to update",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
       toast({
@@ -166,14 +197,6 @@ const InterviewTab = () => {
         description: variables.status === "confirmed" ? 
           "You have successfully accepted this interview." : 
           "You have declined this interview opportunity.",
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to update interview:", error);
-      toast({
-        title: "Failed to update",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
       });
     },
   });
@@ -193,7 +216,6 @@ const InterviewTab = () => {
     queryFn: fetchUserInterviews,
   });
 
-  // Force refetch to see changes immediately
   useEffect(() => {
     const channel = supabase
       .channel('table-db-changes')
@@ -238,17 +260,14 @@ const InterviewTab = () => {
     return interviewDate >= new Date();
   });
 
-  // Create an array of dates where interviews are scheduled
   const interviewDates = interviews?.map(interview => {
     const date = new Date(interview.scheduled_at);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }) || [];
 
-  // Create a unique set of dates (to avoid duplicates)
   const uniqueInterviewDates = [...new Set(interviewDates.map(date => date.toDateString()))]
     .map(dateString => new Date(dateString));
 
-  // Function to style the dates with interviews
   const isDayWithInterview = (date: Date) => {
     return uniqueInterviewDates.some(interviewDate => 
       interviewDate.toDateString() === date.toDateString()
@@ -273,7 +292,6 @@ const InterviewTab = () => {
                 onSelect={setSelectedDate}
                 className="rounded-md border bg-background"
                 disabled={(date) => {
-                  // Disable past dates
                   return date < new Date(new Date().setHours(0, 0, 0, 0));
                 }}
                 modifiers={{
