@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { format, parseISO } from 'date-fns';
@@ -158,7 +159,10 @@ const InterviewTab = () => {
       queryClient.invalidateQueries({ queryKey: ["upcomingInterviews"] });
       
       if (data && data.length > 0 && (variables.status === "confirmed" || variables.status === "declined")) {
-        createInterviewStatusMessage(data[0].cv_id, variables.status, data[0].scheduled_at);
+        const interviewData = data[0];
+        if (interviewData && interviewData.cv_id) {
+          createInterviewStatusMessage(interviewData.cv_id, variables.status, interviewData.scheduled_at);
+        }
       }
       
       toast({

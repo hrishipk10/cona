@@ -51,7 +51,7 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
     };
   }, [queryClient]);
 
-  // Make sure to include all relevant statuses
+  // Include both scheduled, confirmed, pending and declined status interviews
   const upcomingInterviews = interviews 
     ? [...interviews]
         .filter(interview => 
