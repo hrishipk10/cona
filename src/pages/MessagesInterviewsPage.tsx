@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -23,12 +22,10 @@ import { DashboardHeader } from "@/components/admin/DashboardHeader";
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
 type Interview = Database["public"]["Tables"]["interviews"]["Row"] & { cvs?: { applicant_name: string } };
 
-// Generate time slots from 9:00 AM to 6:00 PM in 30-minute intervals
 const generateTimeSlots = () => {
   const timeSlots = [];
   for (let hour = 9; hour <= 18; hour++) {
     for (let minute of [0, 30]) {
-      // Skip 6:30 PM
       if (hour === 18 && minute === 30) continue;
       
       const period = hour >= 12 ? 'PM' : 'AM';
@@ -50,7 +47,7 @@ const MessagesInterviewsPage = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  
+
   const timeSlots = generateTimeSlots();
 
   const { data: settings } = useQuery({
@@ -66,7 +63,7 @@ const MessagesInterviewsPage = () => {
         throw error;
       }
       
-      return data || { company_name: "Cona" }; // Default if no settings found
+      return data || { company_name: "Cona" };
     },
   });
 
@@ -97,6 +94,7 @@ const MessagesInterviewsPage = () => {
         .order("scheduled_at", { ascending: true });
       
       if (error) throw error;
+      console.log("Retrieved interviews for admin:", data);
       return data as Interview[];
     },
   });
@@ -139,7 +137,6 @@ const MessagesInterviewsPage = () => {
 
   const { mutate: updateInterviewDate, isPending: isUpdatingInterview } = useMutation({
     mutationFn: async (data: { cv_id: string; date: Date; time: string }) => {
-      // Get the current user's ID to set as recruiter_id
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("User not authenticated");
@@ -156,10 +153,6 @@ const MessagesInterviewsPage = () => {
         throw fetchError;
       }
 
-      console.log("Existing interview check result:", existingInterview);
-
-      // Parse the time string correctly
-      // Example format: "2:30 PM"
       const timeRegex = /^(\d{1,2}):(\d{2})\s(AM|PM)$/;
       const match = data.time.match(timeRegex);
       
@@ -171,20 +164,15 @@ const MessagesInterviewsPage = () => {
       const minutes = parseInt(match[2]);
       const period = match[3];
       
-      // Convert hours to 24-hour format
       if (period === 'PM' && hours !== 12) {
         hours += 12;
       } else if (period === 'AM' && hours === 12) {
         hours = 0;
       }
       
-      // Create a new date object from the selected date
       const scheduledDate = new Date(data.date);
-      // Set the hours and minutes
       scheduledDate.setHours(hours, minutes, 0, 0);
       
-      console.log("Scheduled date with time:", scheduledDate);
-
       if (existingInterview) {
         console.log("Updating existing interview:", existingInterview.id);
         const { error } = await supabase
@@ -193,7 +181,7 @@ const MessagesInterviewsPage = () => {
             scheduled_at: scheduledDate.toISOString(),
             updated_at: new Date().toISOString(),
             recruiter_id: user.id,
-            status: "scheduled", // Reset status on rescheduling
+            status: "scheduled",
           })
           .eq("id", existingInterview.id);
         
@@ -221,7 +209,6 @@ const MessagesInterviewsPage = () => {
         }
       }
 
-      // Get the CV to use the applicant name in the message
       const { data: cv, error: cvError } = await supabase
         .from("cvs")
         .select("applicant_name")
@@ -235,7 +222,6 @@ const MessagesInterviewsPage = () => {
 
       const companyName = settings?.company_name || "Cona";
       
-      // Send a notification message about the interview to the applicant
       const interview = existingInterview ? "rescheduled" : "scheduled";
       const interviewMessage = `Hello ${cv.applicant_name}, your interview with ${companyName} has been ${interview} for ${format(scheduledDate, "EEEE, MMMM do, yyyy")} at ${data.time}. Please make sure you're available at this time.`;
       

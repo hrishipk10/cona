@@ -51,12 +51,20 @@ export const UpcomingInterviews = ({ interviews }: UpcomingInterviewsProps) => {
     };
   }, [queryClient]);
 
+  // Make sure to include all relevant statuses
   const upcomingInterviews = interviews 
     ? [...interviews]
-        .filter(interview => interview.status === 'scheduled' || interview.status === 'confirmed' || interview.status === 'pending' || interview.status === 'declined')
+        .filter(interview => 
+          interview.status === 'scheduled' || 
+          interview.status === 'confirmed' || 
+          interview.status === 'pending' || 
+          interview.status === 'declined'
+        )
         .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
         .slice(0, 4)
     : [];
+
+  console.log("Upcoming interviews for admin dashboard:", upcomingInterviews);
 
   const getStatusIcon = (status: string) => {
     switch(status) {

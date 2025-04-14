@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { format, parseISO } from 'date-fns';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Clock, Check, X } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Check, X, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,51 +53,48 @@ const InterviewCard = ({ interview, onStatusChange }: {
           </div>
           <div className="text-right">
             <div className="flex space-x-2 mt-3 justify-end">
-              {!isDeclined && (
+              {isDeclined ? (
                 <Button 
                   size="sm" 
-                  variant={isConfirmed ? "default" : "outline"} 
-                  className={`flex items-center gap-1 ${
-                    isConfirmed 
-                      ? "bg-green-600 hover:bg-green-700 text-white" 
-                      : "bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
-                  }`}
+                  variant="default" 
+                  className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => onStatusChange(interview.id, "confirmed")}
-                  disabled={isConfirmed}
                 >
-                  <Check className="h-4 w-4" />
-                  {isConfirmed ? "Accepted" : "Accept"}
+                  <RefreshCw className="h-4 w-4" />
+                  Change to Accept
                 </Button>
-              )}
-              
-              {!isConfirmed && (
+              ) : isConfirmed ? (
                 <Button 
                   size="sm" 
-                  variant={isDeclined ? "default" : "outline"} 
-                  className={`flex items-center gap-1 ${
-                    isDeclined 
-                      ? "bg-red-600 hover:bg-red-700 text-white" 
-                      : "bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
-                  }`}
-                  onClick={() => onStatusChange(interview.id, "declined")}
-                  disabled={isDeclined}
-                >
-                  <X className="h-4 w-4" />
-                  {isDeclined ? "Declined" : "Decline"}
-                </Button>
-              )}
-              
-              {/* Always show option to decline even if accepted */}
-              {isConfirmed && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex items-center gap-1 bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                  variant="destructive" 
+                  className="flex items-center gap-1"
                   onClick={() => onStatusChange(interview.id, "declined")}
                 >
-                  <X className="h-4 w-4" />
-                  Decline
+                  <RefreshCw className="h-4 w-4" />
+                  Change to Decline
                 </Button>
+              ) : (
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="default" 
+                    className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => onStatusChange(interview.id, "confirmed")}
+                  >
+                    <Check className="h-4 w-4" />
+                    Accept
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    className="flex items-center gap-1"
+                    onClick={() => onStatusChange(interview.id, "declined")}
+                  >
+                    <X className="h-4 w-4" />
+                    Decline
+                  </Button>
+                </>
               )}
             </div>
             
@@ -124,7 +120,6 @@ const InterviewTab = () => {
     if (userError) throw userError;
     if (!user) throw new Error("No user found");
 
-    // Find the CV associated with this user
     const { data: cv, error: cvError } = await supabase
       .from("cvs")
       .select("id")
@@ -134,7 +129,6 @@ const InterviewTab = () => {
     if (cvError) throw cvError;
     if (!cv) return [];
 
-    // Get all interviews for this CV
     const { data: interviews, error: interviewsError } = await supabase
       .from("interviews")
       .select("*")
@@ -160,13 +154,9 @@ const InterviewTab = () => {
       return data;
     },
     onSuccess: (data, variables) => {
-      // Invalidate and refetch interviews to update UI
       queryClient.invalidateQueries({ queryKey: ["userInterviews"] });
-      
-      // Also invalidate upcomingInterviews count displayed on the dashboard
       queryClient.invalidateQueries({ queryKey: ["upcomingInterviews"] });
       
-      // Create a message to notify recruiters - Fix: Check if data exists and has elements
       if (data && data.length > 0 && (variables.status === "confirmed" || variables.status === "declined")) {
         createInterviewStatusMessage(data[0].cv_id, variables.status, data[0].scheduled_at);
       }
@@ -188,7 +178,6 @@ const InterviewTab = () => {
     },
   });
 
-  // Function to create a message in the database when interview status changes
   const createInterviewStatusMessage = async (cvId: string, status: string, scheduledAt: string) => {
     try {
       const formattedDate = format(new Date(scheduledAt), 'MMMM do, yyyy at h:mm a');
@@ -227,7 +216,6 @@ const InterviewTab = () => {
     queryFn: fetchUserInterviews,
   });
 
-  // Force refetch to see changes immediately and set up real-time subscription
   useEffect(() => {
     const channel = supabase
       .channel('interview-updates')
@@ -272,17 +260,14 @@ const InterviewTab = () => {
     return interviewDate >= new Date();
   });
 
-  // Create an array of dates where interviews are scheduled
   const interviewDates = interviews?.map(interview => {
     const date = new Date(interview.scheduled_at);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }) || [];
 
-  // Create a unique set of dates (to avoid duplicates)
   const uniqueInterviewDates = [...new Set(interviewDates.map(date => date.toDateString()))]
     .map(dateString => new Date(dateString));
 
-  // Function to style the dates with interviews
   const isDayWithInterview = (date: Date) => {
     return uniqueInterviewDates.some(interviewDate => 
       interviewDate.toDateString() === date.toDateString()
@@ -307,7 +292,6 @@ const InterviewTab = () => {
                 onSelect={setSelectedDate}
                 className="rounded-md border bg-background"
                 disabled={(date) => {
-                  // Disable past dates
                   return date < new Date(new Date().setHours(0, 0, 0, 0));
                 }}
                 modifiers={{
