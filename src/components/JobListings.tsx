@@ -62,9 +62,13 @@ const JobListings = () => {
         .eq("user_id", user.id)
         .single();
       
-      // Fixed error handling - check if error exists before accessing its properties
-      if (error && typeof error === 'object' && error !== null && 'code' in error && error.code !== 'PGRST116') {
-        throw error;
+      // Fixed error handling to properly check if error exists and its properties
+      if (error) {
+        // Check if error has a code property and it's not the "not found" code
+        const errorCode = error && typeof error === 'object' && 'code' in error ? error.code : null;
+        if (errorCode !== 'PGRST116') {
+          throw error;
+        }
       }
       
       return data;
