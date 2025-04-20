@@ -62,8 +62,8 @@ const JobListings = () => {
         .eq("user_id", user.id)
         .single();
       
-      // Fixed error handling when error is possibly null
-      if (error && error.code !== 'PGRST116') {
+      // Fixed error handling - check if error exists before accessing its properties
+      if (error && typeof error === 'object' && error !== null && 'code' in error && error.code !== 'PGRST116') {
         throw error;
       }
       
@@ -256,11 +256,11 @@ const JobListings = () => {
                         >
                           {applyingToId === job.id ? (
                             <>
-                              <Spinner className="mr-2 h-4 w-4" /> Applying...
+                              <Spinner /> Applying...
                             </>
                           ) : userHasApplied && userCV?.job_id === job.id ? (
                             <>
-                              <CheckCircle className="mr-2 h-4 w-4" /> Applied
+                              <CheckCircle /> Applied
                             </>
                           ) : userHasApplied ? (
                             "Already Applied"
@@ -280,11 +280,11 @@ const JobListings = () => {
                 >
                   {applyingToId === job.id ? (
                     <>
-                      <Spinner className="mr-2 h-4 w-4" /> Applying...
+                      <Spinner /> Applying...
                     </>
                   ) : userHasApplied && userCV?.job_id === job.id ? (
                     <>
-                      <CheckCircle className="mr-2 h-4 w-4" /> Applied
+                      <CheckCircle /> Applied
                     </>
                   ) : userHasApplied ? (
                     "Already Applied"
@@ -302,4 +302,3 @@ const JobListings = () => {
 };
 
 export default JobListings;
-
