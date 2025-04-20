@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -193,7 +192,7 @@ const ClientDashboard = () => {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-karla font-semibold text-secondary">
-            {existingCV ? `Hello ${existingCV.applicant_name}` : 'Welcome to the Recruitment Portal'}
+            {cv ? `Welcome back, ${cv.applicant_name}` : 'Welcome to the Recruitment Portal'}
           </h1>
           <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
@@ -232,54 +231,11 @@ const ClientDashboard = () => {
           </TabsList>
 
           <TabsContent value="jobs">
-            <Card>
-              <CardHeader>
-                <h2 className="text-2xl font-medium font-karla">
-                  Job Opportunities
-                </h2>
-                <p className="text-muted-foreground font-inconsolata">
-                  Explore available positions and submit your application
-                </p>
-              </CardHeader>
-              <CardContent>
-                {!existingCV ? (
-                  <div className="text-center py-10">
-                    <h3 className="text-xl font-bold mb-4">Create Your CV First</h3>
-                    <p className="text-muted-foreground mb-6">You need to create your profile before applying to jobs</p>
-                    <Button onClick={() => document.querySelector('[data-value="profile"]')?.click()}>
-                      Create Profile
-                    </Button>
-                  </div>
-                ) : (
-                  <JobListings />
-                )}
-              </CardContent>
-            </Card>
+            <JobListings />
           </TabsContent>
 
           <TabsContent value="profile">
-            {!existingCV || isEditing ? (
-              <Card>
-                <CardHeader>
-                  <h2 className="text-2xl font-medium font-karla">
-                    {existingCV ? 'Update Your CV' : 'Create Your CV'}
-                  </h2>
-                  <p className="text-muted-foreground font-inconsolata">
-                    {existingCV
-                      ? 'Update your profile information'
-                      : 'Please fill in your details and upload your CV document'}
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <CVForm
-                    existingCV={existingCV}
-                    onSubmitSuccess={() => setIsEditing(false)}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <ProfileTab />
-            )}
+            <ProfileTab />
           </TabsContent>
 
           <TabsContent value="interviews">

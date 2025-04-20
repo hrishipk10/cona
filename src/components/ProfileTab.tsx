@@ -1,14 +1,11 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Edit, Download, CheckCircle } from "lucide-react";
+import { Edit, Download } from "lucide-react";
 import CVDisplay from "./CVDisplay";
 import CVForm from "./CVForm";
 
@@ -25,7 +22,7 @@ const ProfileTab = () => {
 
       const { data, error } = await supabase
         .from('cvs')
-        .select('*')
+        .select('*, job_postings!inner(*)')
         .eq('user_id', user.id)
         .maybeSingle();
       
@@ -142,7 +139,6 @@ const ProfileTab = () => {
     );
   }
 
-  // If user doesn't have a CV yet or is editing
   if (!cv || isEditing) {
     return (
       <Card>
@@ -164,7 +160,6 @@ const ProfileTab = () => {
     );
   }
 
-  // If user has applied for a job
   const hasAppliedForJob = cv.job_id !== null && cv.job_id !== undefined;
 
   return (

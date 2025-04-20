@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,17 +70,15 @@ const JobListings = () => {
     mutationFn: async (jobId: string) => {
       if (!userCV) throw new Error("You need a CV to apply");
       
-      // Update CV with job_id
       const { error } = await supabase
         .from("cvs")
         .update({ job_id: jobId })
         .eq("id", userCV.id);
         
       if (error) throw error;
-
-      // Increment applications count for the job
-      const { error: countError } = await supabase.rpc('increment_job_applications', { job_id: jobId });
-      if (countError) throw countError;
+      
+      const { data: { error: rpcError } } = await supabase.rpc('increment_job_applications', { job_id: jobId });
+      if (rpcError) throw rpcError;
     },
     onMutate: (jobId) => {
       setApplyingToId(jobId);

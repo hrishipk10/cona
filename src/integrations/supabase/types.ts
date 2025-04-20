@@ -41,6 +41,7 @@ export type Database = {
           github_profile: string | null
           id: string
           industry_experience: string | null
+          job_id: string | null
           languages_known: string[] | null
           linkedin_profile: string | null
           phone: string | null
@@ -73,6 +74,7 @@ export type Database = {
           github_profile?: string | null
           id?: string
           industry_experience?: string | null
+          job_id?: string | null
           languages_known?: string[] | null
           linkedin_profile?: string | null
           phone?: string | null
@@ -105,6 +107,7 @@ export type Database = {
           github_profile?: string | null
           id?: string
           industry_experience?: string | null
+          job_id?: string | null
           languages_known?: string[] | null
           linkedin_profile?: string | null
           phone?: string | null
@@ -121,7 +124,15 @@ export type Database = {
           willingness_to_relocate?: boolean | null
           years_experience?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cvs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interviews: {
         Row: {
@@ -324,6 +335,10 @@ export type Database = {
       check_is_admin: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      increment_job_applications: {
+        Args: { job_id: string }
+        Returns: undefined
       }
     }
     Enums: {
