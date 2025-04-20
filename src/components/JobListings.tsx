@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +33,6 @@ const JobListings = () => {
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
   const [applyingToId, setApplyingToId] = useState<string | null>(null);
 
-  // Fetch job postings
   const { data: jobs, isLoading, error } = useQuery({
     queryKey: ["jobPostings"],
     queryFn: async () => {
@@ -49,7 +47,6 @@ const JobListings = () => {
     }
   });
 
-  // Check if user has already applied to any jobs
   const { data: userCV } = useQuery({
     queryKey: ["userCV"],
     queryFn: async () => {
@@ -62,11 +59,12 @@ const JobListings = () => {
         .eq("user_id", user.id)
         .single();
       
-      // Fixed error handling to properly check if error exists and its properties
       if (error) {
-        // Check if error has a code property and it's not the "not found" code
-        const errorCode = error && typeof error === 'object' && 'code' in error ? error.code : null;
-        if (errorCode !== 'PGRST116') {
+        if (typeof error === 'object' && error !== null && 'code' in error) {
+          if (error.code !== 'PGRST116') {
+            throw error;
+          }
+        } else {
           throw error;
         }
       }
@@ -75,7 +73,6 @@ const JobListings = () => {
     },
   });
 
-  // Apply for job mutation
   const applyMutation = useMutation({
     mutationFn: async (jobId: string) => {
       if (!userCV) throw new Error("You need a CV to apply");
