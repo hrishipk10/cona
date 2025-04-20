@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FileText, MessageSquare, User, Calendar, LogOut, AlertCircle } from "lucide-react";
@@ -9,11 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import CVForm from "@/components/CVForm";
-import CVDisplay from "@/components/CVDisplay";
 import Messages from "@/components/Messages";
-import ProfileTab from "@/components/ProfileTab";
 import InterviewTab from "@/components/InterviewTab";
 import { supabase } from "@/integrations/supabase/client";
+import JobListings from "@/components/JobListings";
+import ProfileTab from "@/components/ProfileTab";
 
 const ClientDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -135,33 +136,6 @@ const ClientDashboard = () => {
     enabled: !!existingCV,
   });
 
-  const handleThemeChange = async (theme: string) => {
-    if (!existingCV) return;
-    
-    try {
-      const { error } = await supabase
-        .from('cvs')
-        .update({ theme })
-        .eq('id', existingCV.id);
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['userCV'] });
-      
-      toast({
-        title: "Theme updated",
-        description: "Your CV theme has been updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error updating theme:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update theme.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -219,7 +193,7 @@ const ClientDashboard = () => {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-karla font-semibold text-secondary">
-            {existingCV ? `Hello ${existingCV.applicant_name}` : 'Submit Your CV'}
+            {existingCV ? `Hello ${existingCV.applicant_name}` : 'Welcome to the Recruitment Portal'}
           </h1>
           <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
@@ -227,11 +201,11 @@ const ClientDashboard = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="cv" className="w-full">
+        <Tabs defaultValue="jobs" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="cv" className="flex items-center gap-2">
+            <TabsTrigger value="jobs" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              {existingCV ? 'Your CV' : 'Submit CV'}
+              Job Listings
             </TabsTrigger>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -257,37 +231,55 @@ const ClientDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="cv">
+          <TabsContent value="jobs">
             <Card>
               <CardHeader>
                 <h2 className="text-2xl font-medium font-karla">
-                  {existingCV ? 'CV Information' : 'Submit Your CV'}
+                  Job Opportunities
                 </h2>
                 <p className="text-muted-foreground font-inconsolata">
-                  {existingCV
-                    ? 'Your current CV information'
-                    : 'Please fill in your details and upload your CV document'}
+                  Explore available positions and submit your application
                 </p>
               </CardHeader>
               <CardContent>
-                {existingCV && !isEditing ? (
-                  <CVDisplay 
-                    cv={existingCV} 
-                    onEdit={() => setIsEditing(true)} 
-                    onThemeChange={handleThemeChange} 
-                  />
+                {!existingCV ? (
+                  <div className="text-center py-10">
+                    <h3 className="text-xl font-bold mb-4">Create Your CV First</h3>
+                    <p className="text-muted-foreground mb-6">You need to create your profile before applying to jobs</p>
+                    <Button onClick={() => document.querySelector('[data-value="profile"]')?.click()}>
+                      Create Profile
+                    </Button>
+                  </div>
                 ) : (
-                  <CVForm
-                    existingCV={existingCV}
-                    onSubmitSuccess={() => setIsEditing(false)}
-                  />
+                  <JobListings />
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="profile">
-            <ProfileTab />
+            {!existingCV || isEditing ? (
+              <Card>
+                <CardHeader>
+                  <h2 className="text-2xl font-medium font-karla">
+                    {existingCV ? 'Update Your CV' : 'Create Your CV'}
+                  </h2>
+                  <p className="text-muted-foreground font-inconsolata">
+                    {existingCV
+                      ? 'Update your profile information'
+                      : 'Please fill in your details and upload your CV document'}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <CVForm
+                    existingCV={existingCV}
+                    onSubmitSuccess={() => setIsEditing(false)}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <ProfileTab />
+            )}
           </TabsContent>
 
           <TabsContent value="interviews">

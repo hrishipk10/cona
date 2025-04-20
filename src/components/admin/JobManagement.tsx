@@ -1,3 +1,4 @@
+
 // components/admin/JobManagement.tsx
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -77,7 +78,7 @@ interface JobPosting {
   requirements: string;
   deadline: string;
   status: "active" | "inactive";
-  applications: number;
+  applications_count: number; // Fixed property name
   created_at: string;
 }
 
@@ -116,7 +117,7 @@ export const JobManagement = () => {
     const total = jobPostings.length;
     const active = jobPostings.filter(job => job.status === "active").length;
     const inactive = total - active;
-    const applications = jobPostings.reduce((sum, job) => sum + (job.applications || 0), 0);
+    const applications = jobPostings.reduce((sum, job) => sum + (job.applications_count || 0), 0); // Fixed property name
     
     return {
       totalJobs: total,
@@ -152,7 +153,7 @@ export const JobManagement = () => {
       } else {
         const { error } = await supabase
           .from("job_postings")
-          .insert([{ ...jobData, applications: 0 }]);
+          .insert([{ ...jobData, applications_count: 0 }]); // Fixed property name
         if (error) throw error;
       }
     },
@@ -590,7 +591,7 @@ export const JobManagement = () => {
                     <TableCell>
                       {job.deadline ? format(new Date(job.deadline), "MMM dd, yyyy") : "N/A"}
                     </TableCell>
-                    <TableCell>{job.applications}</TableCell>
+                    <TableCell>{job.applications_count || 0}</TableCell>
                     <TableCell>
                       <Badge variant={job.status === "active" ? "default" : "outline"}>
                         {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
@@ -610,7 +611,6 @@ export const JobManagement = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setViewingJob(job)}
                             type="button"
                           >
                             <Eye className="h-4 w-4 mr-1" />

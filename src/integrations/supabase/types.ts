@@ -164,6 +164,63 @@ export type Database = {
           },
         ]
       }
+      job_postings: {
+        Row: {
+          applications: number
+          applications_count: number | null
+          created_at: string | null
+          deadline: string | null
+          department: string
+          description: string
+          id: string
+          location: string
+          office_location: string | null
+          requirements: string
+          salary_max: number | null
+          salary_min: number | null
+          status: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          applications?: number
+          applications_count?: number | null
+          created_at?: string | null
+          deadline?: string | null
+          department: string
+          description: string
+          id?: string
+          location: string
+          office_location?: string | null
+          requirements: string
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          applications?: number
+          applications_count?: number | null
+          created_at?: string | null
+          deadline?: string | null
+          department?: string
+          description?: string
+          id?: string
+          location?: string
+          office_location?: string | null
+          requirements?: string
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string | null

@@ -2,16 +2,20 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import ProfileHeader from "./ProfileHeader";
-import ProfileDetails from "./ProfileDetails";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Download, CheckCircle } from "lucide-react";
+import CVDisplay from "./CVDisplay";
+import CVForm from "./CVForm";
 
 const ProfileTab = () => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: cv, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['userCV'],
@@ -75,6 +79,33 @@ const ProfileTab = () => {
     }
   };
 
+  const handleThemeChange = async (theme: string) => {
+    if (!cv) return;
+    
+    try {
+      const { error } = await supabase
+        .from('cvs')
+        .update({ theme })
+        .eq('id', cv.id);
+      
+      if (error) throw error;
+      
+      refetch();
+      
+      toast({
+        title: "Theme updated",
+        description: "Your CV theme has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating theme:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update theme.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -111,22 +142,65 @@ const ProfileTab = () => {
     );
   }
 
+  // If user doesn't have a CV yet or is editing
+  if (!cv || isEditing) {
+    return (
+      <Card>
+        <CardHeader>
+          <h2 className="text-2xl font-medium font-karla">
+            {cv ? 'Update Your CV' : 'Create Your CV'}
+          </h2>
+          <p className="text-muted-foreground font-inconsolata">
+            {cv ? 'Update your profile information' : 'Please fill in your details'}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <CVForm
+            existingCV={cv}
+            onSubmitSuccess={() => setIsEditing(false)}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If user has applied for a job
+  const hasAppliedForJob = cv.job_id !== null && cv.job_id !== undefined;
+
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <h3 className="text-2xl font-bold text-primary">Profile</h3>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            <ProfileHeader
-              cv={cv}
-              uploading={uploading}
-              handleAvatarUpload={handleAvatarUpload}
-            />
-            <ProfileDetails cv={cv} />
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-primary">Your Profile</h3>
+            <p className="text-muted-foreground">Manage your professional information</p>
           </div>
+          <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2">
+            <Edit className="h-4 w-4" />
+            Edit CV
+          </Button>
+        </CardHeader>
+
+        <CardContent>
+          {hasAppliedForJob && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6 flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+              <div>
+                <h4 className="font-medium text-green-800">Application Submitted</h4>
+                <p className="text-green-700 text-sm">Your CV has been submitted for consideration</p>
+              </div>
+            </div>
+          )}
+
+          <CVDisplay cv={cv} onEdit={() => setIsEditing(true)} onThemeChange={handleThemeChange} />
         </CardContent>
+
+        <CardFooter className="flex justify-end pt-0">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Download CV
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
