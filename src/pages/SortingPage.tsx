@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, ArrowUpDown, Search, Filter, Sliders, X, Code, Briefcase, Eye 
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ScoringConfig {
   skillsWeight: number;
@@ -28,7 +29,7 @@ interface ScoringConfig {
   languagesWeight: number;
 }
 
-type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "score";
+type SortCriteria = "experience" | "skills" | "rating" | "name" | "date" | "score" | "match" | "recent";
 type SortOrder = "asc" | "desc";
 type StatusFilter = "all" | "pending" | "accepted" | "rejected";
 
@@ -44,6 +45,7 @@ interface CV {
   _score?: number;
   rating?: number; // Added the missing 'rating' property
   application_date: string;
+  job_id?: string; // Added the missing 'job_id' property
   [key: string]: any;
 }
 
@@ -74,9 +76,10 @@ const SortingPage = () => {
   const [minExperience, setMinExperience] = useState<number>(0);
   const [maxExperience, setMaxExperience] = useState<number>(30);
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [selectedJobId, setSelectedJobId] = useState<string | "all">("all");
 
   // Sorting state
-  const [sortCriteria, setSortCriteria] = useState<SortCriteria>("score");
+  const [sortCriteria, setSortCriteria] = useState<SortCriteria>("match");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   // Languages and positions filters
@@ -100,7 +103,7 @@ const SortingPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cvs")
-        .select("*")
+        .select("*, job_id") // Ensure job_id is included
         .order("application_date", { ascending: false });
       if (error) throw error;
       return data;
@@ -160,6 +163,30 @@ const SortingPage = () => {
       description: "Scoring configuration has been reset to default values."
     });
   };
+
+  const { data: positions, isLoading: positionsLoading } = useQuery({
+    queryKey: ["positions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("positions")
+        .select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: jobPostings, isLoading: jobsLoading } = useQuery({
+    queryKey: ["job_postings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("job_postings")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
 
   const saveScoringConfig = () => {
     toast({
@@ -230,7 +257,8 @@ const SortingPage = () => {
     if (!cvs) return [];
     const scoredCVs = scoreCVs(
       cvs.filter(cv => {
-        if (statusFilter !== "all" && cv.status !== statusFilter) return false;
+        if (statusFilter !== "all" && cv.status !== statusFilter) return false; // Filter by status
+        if (selectedJobId !== "all" && cv.job_id !== selectedJobId) return false; // Filter by job posting
         if (!matchesSearchQuery(cv)) return false;
         if (cv.years_experience < minExperience || cv.years_experience > maxExperience) return false;
         if (selectedSkills.length > 0 && 
@@ -251,19 +279,11 @@ const SortingPage = () => {
           return sortOrder === "asc" 
             ? a.years_experience - b.years_experience
             : b.years_experience - a.years_experience;
-        case "name":
-          return sortOrder === "asc"
-            ? a.applicant_name.localeCompare(b.applicant_name)
-            : b.applicant_name.localeCompare(a.applicant_name);
-        case "date":
+        case "recent":
           return sortOrder === "asc"
             ? new Date(a.application_date).getTime() - new Date(b.application_date).getTime()
             : new Date(b.application_date).getTime() - new Date(a.application_date).getTime();
-        case "rating":
-          return sortOrder === "asc"
-            ? (a.rating || 0) - (b.rating || 0)
-            : (b.rating || 0) - (a.rating || 0);
-        case "score":
+        case "match":
         default:
           return sortOrder === "asc"
             ? a._score - b._score
@@ -271,7 +291,7 @@ const SortingPage = () => {
       }
     });
   }, [
-    cvs, statusFilter, searchQuery, minExperience, maxExperience,
+    cvs, statusFilter, selectedJobId, searchQuery, minExperience, maxExperience,
     selectedSkills, selectedLanguages, selectedPositions,
     sortCriteria, sortOrder, scoringConfig
   ]);
@@ -724,7 +744,82 @@ const SortingPage = () => {
             </CardContent>
           </Card>
         </div>
-
+        <div className="mb-6">
+          <Card className="space-y-6 bg-secondary rounded-xl p-2">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Filter Applications</h3>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Filters</span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="job-filter" className="text-sm font-medium mb-1 block">
+                    Job Position
+                  </Label>
+                  <Select
+                    value={selectedJobId}
+                    onValueChange={(value) => setSelectedJobId(value)}
+                  >
+                    <SelectTrigger id="job-filter">
+                      <SelectValue placeholder="All Positions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Positions</SelectItem>
+                      {jobPostings?.map((job) => (
+                        <SelectItem key={job.id} value={job.id}>
+                          {job.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="status-filter" className="text-sm font-medium mb-1 block">
+                    Application Status
+                  </Label>
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+                  >
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="sort-by" className="text-sm font-medium mb-1 block">
+                    Sort By
+                  </Label>
+                  <Select
+                    value={sortCriteria}
+                    onValueChange={(value) => setSortCriteria(value as SortCriteria)}
+                  >
+                    <SelectTrigger id="sort-by">
+                      <SelectValue placeholder="Sort By" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="match">Requirements Match</SelectItem>
+                      <SelectItem value="experience">Years of Experience</SelectItem>
+                      <SelectItem value="recent">Recent Applications</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         {/* Table of CVs with the new pending toggle */}
         <div className="bg-white rounded-lg shadow overflow-hidden mt-4">
           <div className="flex items-center justify-between px-4 py-3 border-b">
@@ -794,7 +889,7 @@ const SortingPage = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{cv.current_job_title || "N/A"}</TableCell>
+                      <TableCell>{jobPostings?.find(job => job.id === cv.job_id)?.title || "N/A"}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
