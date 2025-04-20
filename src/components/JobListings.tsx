@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,11 +56,15 @@ const JobListings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
       
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("cvs")
         .select("*")
         .eq("user_id", user.id)
         .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
       
       return data;
     },
@@ -207,16 +212,16 @@ const JobListings = () => {
                     </DialogHeader>
                     <div className="space-y-6 py-4">
                       <div className="flex flex-wrap gap-3">
-                        <Badge variant="outline" className="px-3 py-1">
+                        <Badge variant="outline">
                           {job.department}
                         </Badge>
-                        <Badge variant="secondary" className="px-3 py-1">
+                        <Badge variant="secondary">
                           {job.type}
                         </Badge>
-                        <Badge variant="outline" className="px-3 py-1">
+                        <Badge variant="outline">
                           {job.location}
                         </Badge>
-                        <Badge variant="outline" className="px-3 py-1">
+                        <Badge variant="outline">
                           ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}
                         </Badge>
                       </div>

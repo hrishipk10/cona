@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -192,7 +193,7 @@ const ClientDashboard = () => {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-karla font-semibold text-secondary">
-            {cv ? `Welcome back, ${cv.applicant_name}` : 'Welcome to the Recruitment Portal'}
+            {existingCV ? `Welcome back, ${existingCV.applicant_name}` : 'Welcome to the Recruitment Portal'}
           </h1>
           <Button variant="destructive" className="rounded-xl gap-2" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />

@@ -1,11 +1,12 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, Download } from "lucide-react";
+import { Edit, Download, CheckCircle } from "lucide-react";
 import CVDisplay from "./CVDisplay";
 import CVForm from "./CVForm";
 
