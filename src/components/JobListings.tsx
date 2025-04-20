@@ -62,6 +62,7 @@ const JobListings = () => {
         .eq("user_id", user.id)
         .single();
       
+      // Fixed error handling when error is possibly null
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
@@ -301,3 +302,4 @@ const JobListings = () => {
 };
 
 export default JobListings;
+
